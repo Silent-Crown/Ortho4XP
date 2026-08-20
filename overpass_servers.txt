@@ -3,4 +3,6 @@
 # One entry per line. At least one entry is required.
 
 DE = https://overpass-api.de/api/interpreter
-KU = https://overpass.private.coffee/api/interpreter
+CH = https://overpass.osm.ch/api/interpreter
+FR = https://overpass.openstreetmap.fr/api/interpreter
+VK = https://maps.mail.ru/osm/tools/overpass/api/interpreter
