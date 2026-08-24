@@ -55,9 +55,16 @@ Plans:
 
 **Plans**: 3 plans
 Plans:
+**Wave 1**
 
 - [ ] 02-01-PLAN.md — tracer: ICAO resolver + `report coverage --icao` end-to-end (containing tile), test harness, config var
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-02-PLAN.md — resolver 3-way error classification + full 3x3 coverage block
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 02-03-PLAN.md — `report tiles` inventory + `report health` (partial/crashed leftovers)
 
 ### Phase 3: ICAO-Driven Build
