@@ -3,6 +3,8 @@ import math
 import traceback
 import argparse
 
+cmd_line = "USAGE: Ortho4XP.py lat lon imagery zl (won't read a tile config)\n  OR:  Ortho4XP.py lat lon (with existing tile config file)"
+
 ##############################################################################
 def parse_and_floor_coord(value, *, lo, hi, name):
     """Parse a coordinate string, floor to the containing tile, range-check.
@@ -102,8 +104,49 @@ def run_and_report(fn, *args, **kwargs):
 
 
 ##############################################################################
+def _is_number(s):
+    """True if s parses as a float — used only to sniff legacy coordinate argv."""
+    try:
+        float(s)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+##############################################################################
+def run_legacy(argv):
+    """Legacy `lat lon [provider zl]` compatibility path (pre-argparse shape).
+
+    Matches the original inline block's argument-count tolerance: 2 tokens read
+    an existing tile config; 4+ tokens override provider/zl (trailing tokens
+    ignored). Usage errors now exit non-zero (was exit 0).
+    """
+    if len(argv) < 2:
+        print(cmd_line)
+        sys.exit(1)
+    if len(argv) == 2:
+        run_build(argv[0], argv[1])
+        return
+    try:
+        provider = argv[2]
+        zl = int(argv[3])
+    except (IndexError, ValueError):
+        print(cmd_line)
+        sys.exit(1)
+    run_build(argv[0], argv[1], provider=provider, zl=zl)
+
+
+##############################################################################
 def dispatch(argv):
-    """Top-level CLI entry: parse argv and route to the build subcommand."""
+    """Top-level CLI entry: raw-argv legacy sniff first, then argparse.
+
+    The sniff must run before build_parser().parse_args() — argparse's
+    required=True subparser calls sys.exit(2) on any unrecognized token, so a
+    bare `lat lon` would never reach the legacy branch otherwise.
+    """
+    if len(argv) >= 2 and _is_number(argv[0]) and _is_number(argv[1]):
+        run_and_report(run_legacy, argv)
+        return
     args = build_parser().parse_args(argv)
     if args.command == "build":
         run_and_report(run_build, args.lat, args.lon, args.provider, args.zl)
@@ -127,4 +170,7 @@ if __name__ == "__main__":
         pass
     else:
         raise AssertionError("parse_lon('not-a-number') should raise ValueError")
+    assert _is_number("47") is True
+    assert _is_number("-122.5") is True
+    assert _is_number("build") is False
     print("O4_CLI_Utils self-check OK")
