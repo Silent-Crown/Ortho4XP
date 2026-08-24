@@ -1,9 +1,10 @@
 ---
 phase: 01-cli-dispatch-compatibility
 verified: 2026-08-24T00:00:00Z
-status: human_needed
-score: 7/8 must-haves verified
-behavior_unverified: 1
+status: passed
+score: 8/8 must-haves verified
+behavior_unverified: 0
+human_validated: 2026-08-24 — no-arg GUI launch confirmed by user ("pass"): window opens, "Bon vol!" prints on close
 overrides_applied: 0
 behavior_unverified_items:
   - truth: "Running `python Ortho4XP.py` with no arguments launches the Tkinter GUI and prints \"Bon vol!\" after the window closes (CLI-02)."
