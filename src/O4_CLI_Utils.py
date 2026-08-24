@@ -24,6 +24,8 @@ def parse_and_floor_coord(value, *, lo, hi, name):
         f = float(value)
     except (ValueError, TypeError):
         raise ValueError(f"{name} must be a number, got {value!r}")
+    if not math.isfinite(f):
+        raise ValueError(f"{name} must be a finite number, got {value!r}")
     n = math.floor(f)
     if not (lo <= n <= hi):
         raise ValueError(f"{name} {n} out of range [{lo}, {hi}]")
