@@ -113,6 +113,11 @@ cfg_app_vars = {
         "default": "",
         "hint": "If sceneries with overlays are not found in custom_overlay_src, set an alternate directory to search.",
     },
+    "mcp_aviation_server_url": {
+        "type": str,
+        "default": "http://127.0.0.1:8000/mcp",
+        "hint": "Base URL of the mcp_aviation_server streamable-HTTP endpoint used to resolve ICAO codes to coordinates for the report/build CLI.",
+    },
 }
 
 cfg_tile_vars = {
