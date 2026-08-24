@@ -25,13 +25,14 @@ without opening the GUI.
 - ✓ Per-tile + global config system (`O4_Cfg_Vars`, `O4_Config_Utils`) — existing
 - ✓ ICAO tag parsing from OSM during a build (`O4_Airport_Utils`) — existing
 - ✓ Imagery providers, DEM sources, Overpass/OSM download — existing
+- ✓ Discoverable argparse CLI — `Ortho4XP.py build --help`, legacy `lat lon [provider zl]`
+  and no-arg GUI preserved, real errors + non-zero exit, floor()-based coord parsing —
+  **validated in Phase 1** (CLI-01..04)
 
 ### Active
 
 <!-- This milestone. Hypotheses until shipped. -->
 
-- [ ] Discoverable CLI — migrate the entry point to argparse with subcommands/flags and
-  `--help`, **preserving** current behavior (no args → GUI; `lat lon [provider zl]` → build)
 - [ ] Build around an ICAO — resolve ICAO → lat/lon, build the containing tile plus tiles
   within a configurable radius
 - [ ] Batch ICAO build — accept multiple ICAOs (args or a list file)
@@ -74,7 +75,7 @@ without opening the GUI.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Extend `Ortho4XP.py` with argparse (not a separate script) | One tool, parity with GUI, keeps a single entry point | — Pending |
+| Extend `Ortho4XP.py` with argparse (not a separate script) | One tool, parity with GUI, keeps a single entry point | ✓ Done (Phase 1) — CLI in `src/O4_CLI_Utils.py`, entry point is a shim |
 | ICAO→coords via `mcp_aviation_server` | Silent-Crown already has the aviation DB; avoid bundling duplicate data | — Pending |
 | Build scope = containing tile + `--radius` neighbors | Airports straddle tile edges; radius is opt-in | — Pending |
 | Reporting reads built-tile state through FNAMES | Path authority already centralized; avoids drift | — Pending |
@@ -97,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-24 after initialization*
+*Last updated: 2026-08-24 after Phase 1 (CLI Dispatch & Compatibility) completion*

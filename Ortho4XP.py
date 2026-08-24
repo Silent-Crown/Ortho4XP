@@ -27,8 +27,6 @@ import O4_Tile_Utils as TILE
 import O4_GUI_Utils as GUI
 import O4_Config_Utils as CFG  # CFG imported last because it can modify other modules variables
 
-cmd_line = "USAGE: Ortho4XP.py lat lon imagery zl (won't read a tile config)\n  OR:  Ortho4XP.py lat lon (with existing tile config file)"
-
 if __name__ == '__main__':
     if not os.path.isdir(FNAMES.Utils_dir):
         print("Missing ", FNAMES.Utils_dir, "directory, check your install. Exiting.")
@@ -52,33 +50,5 @@ if __name__ == '__main__':
         Ortho4XP.mainloop()
         print("Bon vol!")
     else:  # sequel is only concerned with command line
-        if len(sys.argv) < 3:
-            print(cmd_line); sys.exit()
-        try:
-            lat = int(sys.argv[1])
-            lon = int(sys.argv[2])
-        except:
-            print(cmd_line); sys.exit()
-        if len(sys.argv) == 3:
-            try:
-                tile = CFG.Tile(lat, lon, '')
-            except Exception as e:
-                print(e)
-                print("ERROR: could not read tile config file."); sys.exit()
-        else:
-            try:
-                provider_code = sys.argv[3]
-                zoomlevel = int(sys.argv[4])
-                tile = CFG.Tile(lat, lon, '')
-                tile.default_website = provider_code
-                tile.default_zl = zoomlevel
-            except:
-                print(cmd_line); sys.exit()
-        try:
-            VMAP.build_poly_file(tile)
-            MESH.build_mesh(tile)
-            MASK.build_masks(tile)
-            TILE.build_tile(tile)
-            print("Bon vol!")
-        except:
-            print("Crash!")
+        import O4_CLI_Utils as CLI
+        CLI.dispatch(sys.argv[1:])

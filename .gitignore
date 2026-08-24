@@ -21,3 +21,5 @@ venv*/
 .DS_Store
 .serena/
 Ortho4XP.cfg
+# GSD researcher cache (local only)
+.planning/research/.cache/
