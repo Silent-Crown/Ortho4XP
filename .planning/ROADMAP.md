@@ -15,7 +15,7 @@ deliver ICAO-driven builds — single tile, radius, multi-ICAO, and list-file ba
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: CLI Dispatch & Compatibility** - Argparse migration with `--help` discoverability, preserving both frozen legacy invocations and replacing the bare "Crash!" handler with real errors.
+- [x] **Phase 1: CLI Dispatch & Compatibility** - Argparse migration with `--help` discoverability, preserving both frozen legacy invocations and replacing the bare "Crash!" handler with real errors. (completed 2026-08-24)
 - [ ] **Phase 2: Report & ICAO Resolution** - Read-only tile inventory, coverage-by-ICAO, and health/staleness reporting, backed by an ICAO→lat/lon resolver via `mcp_aviation_server`.
 - [ ] **Phase 3: ICAO-Driven Build** - Build a tile (or radius of tiles) around one or more ICAOs, from args or a list file, for unattended runs.
 
@@ -33,7 +33,7 @@ deliver ICAO-driven builds — single tile, radius, multi-ICAO, and list-file ba
   4. When a build or command fails, the user sees a real, non-generic error message and the process exits non-zero, instead of the bare "Crash!" catch-all.
 **Plans**: 1 plan
 Plans:
-- [ ] 01-01-PLAN.md — argparse CLI dispatch (build subcommand tracer + legacy compat expansion)
+- [x] 01-01-PLAN.md — argparse CLI dispatch (build subcommand tracer + legacy compat expansion)
 
 ### Phase 2: Report & ICAO Resolution
 **Mode:** mvp
@@ -66,6 +66,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. CLI Dispatch & Compatibility | 0/1 | Planned | - |
+| 1. CLI Dispatch & Compatibility | 1/1 | Complete   | 2026-08-24 |
 | 2. Report & ICAO Resolution | 0/TBD | Not started | - |
 | 3. ICAO-Driven Build | 0/TBD | Not started | - |

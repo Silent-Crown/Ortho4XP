@@ -8,10 +8,10 @@
 
 ### CLI (argparse migration + compatibility)
 
-- [ ] **CLI-01**: User can run `Ortho4XP.py <subcommand> --help` and discover every command and flag (argparse-based dispatch).
-- [ ] **CLI-02**: Existing invocations still work unchanged — no args launches the GUI; `Ortho4XP.py lat lon [provider zl]` runs the legacy single-tile build. (Legacy shapes detected on raw `sys.argv` before argparse runs.)
-- [ ] **CLI-03**: A failed build or command exits non-zero with a real error message, replacing the bare `except: print("Crash!")`.
-- [ ] **CLI-04**: Legacy lat/lon parsing uses `floor()` semantics, not `int()` truncation, so southern/western-hemisphere coordinates map to the correct tile.
+- [x] **CLI-01**: User can run `Ortho4XP.py <subcommand> --help` and discover every command and flag (argparse-based dispatch).
+- [x] **CLI-02**: Existing invocations still work unchanged — no args launches the GUI; `Ortho4XP.py lat lon [provider zl]` runs the legacy single-tile build. (Legacy shapes detected on raw `sys.argv` before argparse runs.)
+- [x] **CLI-03**: A failed build or command exits non-zero with a real error message, replacing the bare `except: print("Crash!")`.
+- [x] **CLI-04**: Legacy lat/lon parsing uses `floor()` semantics, not `int()` truncation, so southern/western-hemisphere coordinates map to the correct tile.
 
 ### Build (ICAO-driven builds)
 
