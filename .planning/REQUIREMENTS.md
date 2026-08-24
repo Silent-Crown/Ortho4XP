@@ -50,18 +50,18 @@
 
 | REQ-ID | Phase |
 |--------|-------|
-| CLI-01 | — |
-| CLI-02 | — |
-| CLI-03 | — |
-| CLI-04 | — |
-| BUILD-01 | — |
-| BUILD-02 | — |
-| BUILD-03 | — |
-| BUILD-04 | — |
-| BUILD-05 | — |
-| RPT-01 | — |
-| RPT-02 | — |
-| RPT-03 | — |
+| CLI-01 | Phase 1 |
+| CLI-02 | Phase 1 |
+| CLI-03 | Phase 1 |
+| CLI-04 | Phase 1 |
+| BUILD-01 | Phase 2 |
+| BUILD-02 | Phase 3 |
+| BUILD-03 | Phase 3 |
+| BUILD-04 | Phase 3 |
+| BUILD-05 | Phase 3 |
+| RPT-01 | Phase 2 |
+| RPT-02 | Phase 2 |
+| RPT-03 | Phase 2 |
 
 ---
 *Requirements for Ortho4XP CLI automation — v1 milestone*
