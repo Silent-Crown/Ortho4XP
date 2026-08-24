@@ -757,9 +757,10 @@ security_enforcement enabled, ASVS level 1 `[VERIFIED: .planning/config.json]`.
 **These `[ASSUMED]` items should be confirmed by one live `curl`/smoke call against a running
 container early in execution (a Wave-0 spike), since they concern the exact envelope shape.**
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact FastMCP 3.1 `tools/call` envelope for a `str`-returning tool.**
+   - **RESOLVED:** Adopted into Plan 01 as the `backstop` must_have + end-of-phase live smoke — parse `content[0].text` in code, confirm the exact envelope with a live curl before writing the canned conftest bodies.
    - What we know: the tool returns `model_dump_json()` (a JSON string); MCP wraps tool
      output in `result.content[].text`; FastMCP may also populate `result.structuredContent`.
    - What's unclear: whether `structuredContent` wraps the string under a `"result"` key and
@@ -768,12 +769,14 @@ container early in execution (a Wave-0 spike), since they concern the exact enve
      live `curl` in a Wave-0 smoke test and pin the access path.
 
 2. **Coverage tiles outside `[-90,89] × [-180,179]`.**
+   - **RESOLVED:** Adopted into Plan 02 as a planner assumption (skip off-grid neighbors) plus the `test_coverage_skips_offgrid` test.
    - What we know: `parse_and_floor_coord` range-checks and raises `[VERIFIED: src/O4_CLI_Utils.py:30-31]`.
    - What's unclear: desired behavior for an airport whose neighbor tile falls off-grid.
    - Recommendation: skip (don't report) out-of-range neighbor tiles rather than raising;
      note in output. Small edge case; confirm wording with user if it matters.
 
 3. **GUI persistence of the new URL var (Option a vs b in Config Declaration).**
+   - **RESOLVED:** Adopted into Plan 01 as Option (b) — declare in `cfg_app_vars` only, read plain-text with a default.
    - Recommendation: Option (b) — declare in `cfg_app_vars` only, read plain-text with a
      default — unless the user wants it editable in the GUI Application Config tab.
 
