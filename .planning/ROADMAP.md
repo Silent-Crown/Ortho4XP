@@ -53,7 +53,12 @@ Plans:
   3. User can ask whether a given ICAO's tile(s) are already built, using that same resolver against the tile inventory.
   4. User can run a health/staleness report that flags partial builds (missing DSF/DDS, crashed-run leftovers) and stale tiles via one shared "is this tile complete" predicate.
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+
+- [ ] 02-01-PLAN.md — tracer: ICAO resolver + `report coverage --icao` end-to-end (containing tile), test harness, config var
+- [ ] 02-02-PLAN.md — resolver 3-way error classification + full 3x3 coverage block
+- [ ] 02-03-PLAN.md — `report tiles` inventory + `report health` (partial/crashed leftovers)
 
 ### Phase 3: ICAO-Driven Build
 
@@ -78,5 +83,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. CLI Dispatch & Compatibility | 1/1 | Complete    | 2026-08-24 |
-| 2. Report & ICAO Resolution | 0/TBD | Not started | - |
+| 2. Report & ICAO Resolution | 0/3 | Not started | - |
 | 3. ICAO-Driven Build | 0/TBD | Not started | - |
