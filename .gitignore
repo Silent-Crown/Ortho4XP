@@ -19,3 +19,5 @@ venv*/
 **/*.swp
 .last_gui_params.txt
 .DS_Store
+.serena/
+Ortho4XP.cfg
