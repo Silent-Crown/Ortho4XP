@@ -372,8 +372,8 @@ the `cmd_line` string (line 30), the init block (lines 32-49), and the bare
 
 ## Open Questions
 
-1. **Does `Tile.__init__` or the pipeline stages ever call `sys.exit()` internally on
-   bad input (as opposed to raising)?**
+1. **RESOLVED: Does `Tile.__init__` or the pipeline stages ever call `sys.exit()` internally on
+   bad input (as opposed to raising)?** (Resolved: out of scope — pre-existing behavior, flagged as a known limitation below, not a blocker for this phase.)
    - What we know: `Tile.make_dirs()` (`O4_Config_Utils.py:159-179`) raises a bare
      `Exception` on directory permission failure — it does not call `sys.exit()` itself.
    - What's unclear: Whether every code path inside VMAP/MESH/MASK/TILE consistently
