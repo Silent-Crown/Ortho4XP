@@ -6,8 +6,12 @@ and never writes anything to disk.
 """
 
 import os
+import re
 
 import O4_File_Names as FNAMES
+
+# Strict tile-dir matcher (D-05/T-02-04): zOrtho4XP_<slat><slon>, ints only.
+_TILE_RE = re.compile(r"^zOrtho4XP_([+-]\d{2,})([+-]\d{3,})$")
 
 
 def read_cfg(path):
@@ -43,6 +47,82 @@ def tile_status(lat, lon):
     if dsf_ok and tex_ok:
         return "built"
     return "partial"
+
+
+def iter_tiles():
+    """Yield ``(lat, lon, path)`` for every ``zOrtho4XP_<latlon>`` dir in Tiles/.
+
+    lat/lon are ints recovered from the strict regex; non-matching directory
+    names are ignored. Yields nothing when ``Tile_dir`` is absent.
+    """
+    if not os.path.isdir(FNAMES.Tile_dir):
+        return
+    for entry in os.scandir(FNAMES.Tile_dir):
+        if not entry.is_dir():
+            continue
+        m = _TILE_RE.match(entry.name)
+        if m:
+            yield int(m.group(1)), int(m.group(2)), entry.path
+
+
+def read_tile_cfg(build_dir, lat, lon):
+    """Read provider/zoom from ``Ortho4XP_<latlon>.cfg`` (NO leading z; D-09).
+
+    Returns ``(default_website, default_zl)`` as strings; a missing file yields
+    ``("", "")`` rather than raising.
+    """
+    path = os.path.join(build_dir, "Ortho4XP_" + FNAMES.short_latlon(lat, lon) + ".cfg")
+    if not os.path.isfile(path):
+        return "", ""
+    d = read_cfg(path)
+    return d.get("default_website", ""), d.get("default_zl", "")
+
+
+def _dir_size(path):
+    """Sum of file sizes under path (os.walk + getsize), read-only."""
+    total = 0
+    for root, _dirs, files in os.walk(path):
+        for name in files:
+            try:
+                total += os.path.getsize(os.path.join(root, name))
+            except OSError:
+                pass
+    return total
+
+
+def _human_size(n):
+    """Compact human size (B/K/M/G) — display only."""
+    size = float(n)
+    for unit in ("B", "K", "M", "G"):
+        if size < 1024 or unit == "G":
+            return f"{size:.0f}{unit}" if unit == "B" else f"{size:.1f}{unit}"
+        size /= 1024
+
+
+def report_tiles():
+    """Print an aligned inventory of built tiles: latlon, provider, zoom, date, size.
+
+    Rows are (lat, lon)-sorted (deterministic). An absent/empty Tiles/ prints a
+    single clean "no tiles built" line. Read-only (D-06).
+    """
+    import time
+
+    tiles = sorted(iter_tiles(), key=lambda t: (t[0], t[1]))
+    if not tiles:
+        print("no tiles built")
+        return
+    header = f"{'tile':<9} {'provider':<10} {'zoom':<5} {'built':<19} {'size':>9}"
+    print(header)
+    for lat, lon, path in tiles:
+        provider, zoom = read_tile_cfg(path, lat, lon)
+        dsf = FNAMES.dsf_file(path, lat, lon)
+        if os.path.isfile(dsf):
+            built = time.strftime("%Y-%m-%d %H:%M", time.localtime(os.path.getmtime(dsf)))
+        else:
+            built = "-"
+        size = _human_size(_dir_size(path))
+        print(f"{FNAMES.short_latlon(lat, lon):<9} {provider or '-':<10} "
+              f"{zoom or '-':<5} {built:<19} {size:>9}")
 
 
 def coverage_tiles(lat, lon):

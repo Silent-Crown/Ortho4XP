@@ -169,11 +169,10 @@ def dispatch(argv):
     elif args.command == "report":
         if args.report_cmd == "coverage":
             run_and_report(RPT.report_coverage, args.icao)
-        else:
-            # tiles/health bodies land in Plan 03; surface is complete for --help.
-            raise NotImplementedError(
-                f"report {args.report_cmd} is not implemented yet"
-            )
+        elif args.report_cmd == "tiles":
+            run_and_report(RPT.report_tiles)
+        elif args.report_cmd == "health":
+            run_and_report(RPT.report_health)
 
 
 ##############################################################################
