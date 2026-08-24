@@ -45,19 +45,47 @@ def tile_status(lat, lon):
     return "partial"
 
 
-def report_coverage(icao):
-    """Resolve an ICAO and print the built/partial/missing status of its tile.
+def coverage_tiles(lat, lon):
+    """Yield the containing tile + its 8 neighbors as floored ``(lat, lon)`` pairs.
 
-    Containing tile only (this plan); full 3x3 coverage lands in Plan 02.
+    Floors the resolved coordinate with ``parse_lat``/``parse_lon`` (D-11 3x3
+    block). A neighbor that floors outside the valid grid is skipped, not raised
+    (planner_assumptions: antimeridian/pole wraparound is a v1.x decision).
     """
-    import O4_ICAO_Utils as ICAO
     import O4_CLI_Utils as CLI
 
-    lat_f, lon_f = ICAO.resolve_icao(icao, ICAO.get_server_url())
-    lat = CLI.parse_lat(lat_f)
-    lon = CLI.parse_lon(lon_f)
-    print(f"{icao.strip().upper():<8} {FNAMES.short_latlon(lat, lon):<9} "
-          f"{tile_status(lat, lon)}")
+    base_lat = CLI.parse_lat(lat)
+    base_lon = CLI.parse_lon(lon)
+    for dlat in (1, 0, -1):
+        for dlon in (-1, 0, 1):
+            try:
+                nlat = CLI.parse_lat(base_lat + dlat)
+                nlon = CLI.parse_lon(base_lon + dlon)
+            except ValueError:
+                continue  # off-grid neighbor (pole/antimeridian): skip, don't crash
+            yield nlat, nlon
+
+
+def report_coverage(icao):
+    """Resolve an ICAO and print the built/partial/missing status of its 3x3 block.
+
+    Reports the containing tile plus its 8 neighbors (D-11). The two resolver
+    failures fail loud on a single stderr line with a non-zero exit (D-04) — no
+    traceback, no coordinate, no tile rows.
+    """
+    import sys
+
+    import O4_ICAO_Utils as ICAO
+
+    ident = icao.strip().upper()
+    try:
+        lat_f, lon_f = ICAO.resolve_icao(ident, ICAO.get_server_url())
+    except (ICAO.AviationServerUnreachable, ICAO.ICAONotFound) as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
+    for lat, lon in coverage_tiles(lat_f, lon_f):
+        print(f"{ident:<8} {FNAMES.short_latlon(lat, lon):<9} "
+              f"{tile_status(lat, lon)}")
 
 
 if __name__ == "__main__":
