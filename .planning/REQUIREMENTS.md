@@ -23,9 +23,9 @@
 
 ### Report (read-only terrain reporting)
 
-- [ ] **RPT-01**: User can list built tiles with provider, zoom level, build date, and on-disk size — read through `O4_File_Names` (FNAMES), never importing the build/config side-effect modules.
+- [x] **RPT-01**: User can list built tiles with provider, zoom level, build date, and on-disk size — read through `O4_File_Names` (FNAMES), never importing the build/config side-effect modules.
 - [x] **RPT-02**: User can ask whether a given ICAO's tile(s) are already built (coverage-by-ICAO), reusing the BUILD-01 resolver and RPT-01 inventory.
-- [ ] **RPT-03**: User can get a health/staleness report flagging partial builds (missing DSF/DDS, crashed-run leftovers) and stale tiles, using one shared "is this tile complete" predicate.
+- [x] **RPT-03**: User can get a health/staleness report flagging partial builds (missing DSF/DDS, crashed-run leftovers) and stale tiles, using one shared "is this tile complete" predicate.
 
 ## v1.x Requirements (deferred)
 
