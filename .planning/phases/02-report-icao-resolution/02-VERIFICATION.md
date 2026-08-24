@@ -1,8 +1,8 @@
 ---
 phase: 02-report-icao-resolution
 verified: 2026-08-24T00:00:00Z
-status: human_needed
-score: 14/14 automated-verifiable truths verified (1 backstop + live smoke deferred to human)
+status: passed
+score: 14/14 automated-verifiable truths verified (1 backstop + live smoke confirmed via UAT)
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
