@@ -125,6 +125,61 @@ def report_tiles():
               f"{zoom or '-':<5} {built:<19} {size:>9}")
 
 
+# Data* intermediate extensions a crashed run leaves behind (D-07).
+_DATA_EXTS = (".poly", ".node", ".ele", ".mesh", ".alt", ".apt", ".weight")
+
+
+def tile_leftovers(build_dir, lat, lon):
+    """Named orphan classes present in a partial tile (read-only, D-07).
+
+    Returns a list of short labels: ``.dsf.tmp`` (a temp DSF beside a missing
+    final one), ``Data*`` (triangulation intermediates with no resulting DSF),
+    ``empty-textures/`` (an existing but empty textures dir).
+    """
+    classes = []
+    dsf = FNAMES.dsf_file(build_dir, lat, lon)
+    dsf_final = os.path.isfile(dsf) and os.path.getsize(dsf) > 0
+    if not dsf_final and os.path.isfile(dsf + ".tmp"):
+        classes.append(".dsf.tmp")
+    if not dsf_final:
+        short = FNAMES.short_latlon(lat, lon)
+        if any(os.path.isfile(os.path.join(build_dir, "Data" + short + ext))
+               for ext in _DATA_EXTS):
+            classes.append("Data*")
+    tex = os.path.join(build_dir, "textures")
+    if os.path.isdir(tex) and not os.listdir(tex):
+        classes.append("empty-textures/")
+    return classes
+
+
+def report_health():
+    """Flag partial tiles + their orphan classes and a global tmp/ leftover.
+
+    Reuses the D-05 ``tile_status`` predicate; no time-based staleness (D-06).
+    Read-only — deletes/moves nothing. Prints a clean "no issues" line when
+    nothing is flagged.
+    """
+    flagged = []
+    for lat, lon, path in sorted(iter_tiles(), key=lambda t: (t[0], t[1])):
+        if tile_status(lat, lon) != "partial":
+            continue
+        classes = tile_leftovers(path, lat, lon) or ["partial"]
+        flagged.append((lat, lon, classes))
+
+    tmp_dirty = os.path.isdir(FNAMES.Tmp_dir) and bool(os.listdir(FNAMES.Tmp_dir))
+
+    if not flagged and not tmp_dirty:
+        print("no issues")
+        return
+    if flagged:
+        print(f"{'tile':<9} {'status':<8} orphans")
+        for lat, lon, classes in flagged:
+            print(f"{FNAMES.short_latlon(lat, lon):<9} {'partial':<8} "
+                  f"{', '.join(classes)}")
+    if tmp_dirty:
+        print(f"global: non-empty {FNAMES.Tmp_dir} (crashed-run leftover)")
+
+
 def coverage_tiles(lat, lon):
     """Yield the containing tile + its 8 neighbors as floored ``(lat, lon)`` pairs.
 
