@@ -82,3 +82,53 @@ def test_resolve_coords_are_finite(monkeypatch):
     monkeypatch.setattr(requests.Session, "post", post)
     lat, lon = ICAO.resolve_icao("KJFK", "http://x/mcp")
     assert math.isfinite(lat) and math.isfinite(lon)
+
+
+def test_resolve_unknown_icao(monkeypatch):
+    # AIRPORT_DETAILS_ERROR -> ICAONotFound whose message names the ICAO.
+    post = _fake_post_factory(conftest.SSE_NOT_FOUND)
+    monkeypatch.setattr(requests.Session, "post", post)
+    with pytest.raises(ICAO.ICAONotFound) as exc:
+        ICAO.resolve_icao("zzzz", "http://x/mcp")
+    msg = str(exc.value)
+    assert "ZZZZ" in msg and "not found" in msg.lower()
+
+
+def test_resolve_db_unavailable(monkeypatch):
+    # SIM_DB_UNAVAILABLE -> AviationServerUnreachable, distinct from refused wording.
+    post = _fake_post_factory(conftest.SSE_DB_DOWN)
+    monkeypatch.setattr(requests.Session, "post", post)
+    with pytest.raises(ICAO.AviationServerUnreachable) as exc:
+        ICAO.resolve_icao("KJFK", "http://x/mcp")
+    msg = str(exc.value)
+    assert "SIM_DB_UNAVAILABLE" in msg
+    assert "unreachable at" not in msg  # distinct from the connection-refused message
+
+
+def test_resolve_jsonrpc_error(monkeypatch):
+    import json
+    body = "event: message\ndata: " + json.dumps(
+        {"jsonrpc": "2.0", "id": 2, "error": {"code": -32000, "message": "boom"}}
+    ) + "\n\n"
+    post = _fake_post_factory(body)
+    monkeypatch.setattr(requests.Session, "post", post)
+    with pytest.raises(ICAO.AviationServerUnreachable):
+        ICAO.resolve_icao("KJFK", "http://x/mcp")
+
+
+def test_resolve_ident_too_long(monkeypatch):
+    def _boom(self, url, **kwargs):
+        raise AssertionError("post must not be called for over-long ident")
+
+    monkeypatch.setattr(requests.Session, "post", _boom)
+    with pytest.raises(ValueError):
+        ICAO.resolve_icao("A" * 11, "http://x/mcp")
+
+
+def test_resolve_isError_false_but_notfound(monkeypatch):
+    # Envelope carries isError:False, but the inner code is not-found: must raise.
+    assert '"isError": false' in conftest.SSE_NOT_FOUND
+    post = _fake_post_factory(conftest.SSE_NOT_FOUND)
+    monkeypatch.setattr(requests.Session, "post", post)
+    with pytest.raises(ICAO.ICAONotFound):
+        ICAO.resolve_icao("ZZZZ", "http://x/mcp")
