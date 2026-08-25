@@ -43,7 +43,7 @@ human_verification:
 | 7 | Overlapping ICAOs collapse to unique tile set built once (D-15) | ✓ VERIFIED | `tiles` set :116,128; test asserts 15 unique calls, no dupes |
 | 8 | Empty/all-comment file or zero-tile → clean msg + non-zero exit, no crash | ✓ VERIFIED | :94-96; tests 117-132 (missing + empty), assert no Traceback |
 | 9 | Deduped set builds in (lat,lon)-sorted order (D-17) | ✓ VERIFIED | sorted() :67,131; test asserts calls == sorted(calls) |
-| 10 | Unknown ICAO skipped; server-unreachable aborts before any build, no partial (D-10/D-11/D-12) | ✓ VERIFIED | :121-127 resolve-all-then-build; test_batch_unknown... (skip+exit1), test_batch_server_unreachable... asserts calls==[] |
+| 10 | Unknown ICAO skipped; server-unreachable aborts before any build, no partial (D-10/D-11/D-12) | ✓ VERIFIED | :121-127 resolve-all-then-build; test_batch_unknown... (skip+exit1), test_batch_server_unreachable... asserts calls==[]. G-03-7: now proven against the real `AIRPORT_NOT_FOUND` server code (see Gap Closure below) |
 | 11 | Exit 0 iff every ICAO resolved AND every tile built, else 1 (D-13) | ✓ VERIFIED | :141-142; tests cover exit 0 and exit 1 paths |
 
 **Score:** 11/11 truths verified (0 present, behavior-unverified)
@@ -70,7 +70,7 @@ Behavior-dependent invariants (D-11 abort-before-build ordering, D-12 continue-o
 
 | Behavior | Command | Result | Status |
 |----------|---------|--------|--------|
-| Full suite | `pytest tests/ -q` | 53 passed | ✓ PASS |
+| Full suite | `pytest tests/ -q` | 54 passed | ✓ PASS |
 | Module self-check | `python src/O4_CLI_Utils.py` | `O4_CLI_Utils self-check OK` | ✓ PASS |
 | D-09 report untouched | `git diff 9ad52fe HEAD -- src/O4_Report_Utils.py` | empty | ✓ PASS |
 
@@ -88,7 +88,7 @@ Behavior-dependent invariants (D-11 abort-before-build ordering, D-12 continue-o
 | Statement | Status | Evidence |
 |-----------|--------|----------|
 | Must not silently omit antimeridian neighbors (D-07) | ✓ upheld | test_neighbor_antimeridian_wrap_both_directions |
-| Must not abandon batch on one unknown ICAO (D-10) | ✓ upheld | test_batch_unknown_icao_skipped_others_build |
+| Must not abandon batch on one unknown ICAO (D-10) | ✓ upheld | test_batch_unknown_icao_skipped_others_build + test_batch_unknown_icao_real_resolver_skips_and_summarizes (real server code, G-03-7) |
 | Must not leave partial/duplicated builds on server-unreachable (D-11) | ✓ upheld | test asserts run_build never called |
 
 ### Anti-Patterns Found
@@ -105,9 +105,37 @@ One optional item — see frontmatter. A live end-to-end build against a real mc
 
 ### Gaps Summary
 
-No gaps. All 4 success criteria, all 4 requirements, all 3 prohibitions, and the compatibility invariant are verified against the code and a green 53-test suite. Status is human_needed solely because a live-server smoke test cannot be run programmatically; it is optional, not blocking.
+No gaps. All 4 success criteria, all 4 requirements, all 3 prohibitions, and the compatibility invariant are verified against the code and a green 54-test suite. Status is human_needed solely because a live-server smoke test cannot be run programmatically; it is optional, not blocking.
+
+---
+
+## Gap Closure: G-03-7 (2026-08-25)
+
+**Source:** UAT test 7 — `build --icao ZZZZ,KJFK` aborted the whole batch on the
+unknown ICAO instead of skipping it (D-10 violation).
+
+**Root cause:** `resolve_icao` classified only `code == "AIRPORT_DETAILS_ERROR"` as
+`ICAONotFound`; the real mcp_aviation_server returns `AIRPORT_NOT_FOUND`, which fell
+through to the `AviationServerUnreachable` abort path. Masked because
+`tests/conftest.py`'s not-found fixture hard-coded the wrong code string.
+
+**Fix (03-02-PLAN, TDD):**
+- `src/O4_ICAO_Utils.py:109` — `code in ("AIRPORT_NOT_FOUND", "AIRPORT_DETAILS_ERROR")`
+  → `ICAONotFound`; all other codes still abort (fail-closed, T-03-03).
+- `tests/conftest.py:43` — not-found fixture now uses the real `"AIRPORT_NOT_FOUND"`, so
+  a regression fails a test again.
+- `tests/test_build_icao.py:201` — new
+  `test_batch_unknown_icao_real_resolver_skips_and_summarizes` drives the real resolver
+  (monkeypatched `requests.Session.post`, not `resolve_icao`), proves `ZZZZ,KJFK` builds
+  `(40,-74)`, exits 1, prints `1/2 ICAOs resolved`.
+
+**Verification:** All three code changes confirmed in the codebase (verifier read each
+file, not the SUMMARY). Full suite `54 passed`. Truth 10 is now proven against the real
+server error code rather than a fixture that encoded the bug. **G-03-7 resolved — no
+gaps remain. Goal achieved.**
 
 ---
 
 _Verified: 2026-08-25_
 _Verifier: Claude (gsd-verifier)_
+_Gap closure verified: 2026-08-25 (G-03-7)_
