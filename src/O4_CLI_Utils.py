@@ -3,6 +3,8 @@ import math
 import traceback
 import argparse
 
+import O4_Report_Utils as RPT
+
 cmd_line = "USAGE: Ortho4XP.py lat lon imagery zl (won't read a tile config)\n  OR:  Ortho4XP.py lat lon (with existing tile config file)"
 
 ##############################################################################
@@ -56,6 +58,18 @@ def build_parser():
     build_p.add_argument("lon", help="SW corner longitude (integer or decimal)")
     build_p.add_argument("--provider", default=None, help="Imagery provider code")
     build_p.add_argument("--zl", type=int, default=None, help="Zoom level")
+
+    # D-08: nest all reports under one `report` subcommand.
+    report_p = subparsers.add_parser(
+        "report", help="Report on already-built tiles (read-only)"
+    )
+    report_sub = report_p.add_subparsers(dest="report_cmd", required=True)
+    report_sub.add_parser("tiles", help="List built/partial/missing tiles")
+    cov_p = report_sub.add_parser(
+        "coverage", help="Report coverage of an ICAO's containing tile"
+    )
+    cov_p.add_argument("--icao", required=True, help="ICAO airport code")
+    report_sub.add_parser("health", help="Report crashed-run leftovers")
 
     return parser
 
@@ -152,6 +166,13 @@ def dispatch(argv):
     args = build_parser().parse_args(argv)
     if args.command == "build":
         run_and_report(run_build, args.lat, args.lon, args.provider, args.zl)
+    elif args.command == "report":
+        if args.report_cmd == "coverage":
+            run_and_report(RPT.report_coverage, args.icao)
+        elif args.report_cmd == "tiles":
+            run_and_report(RPT.report_tiles)
+        elif args.report_cmd == "health":
+            run_and_report(RPT.report_health)
 
 
 ##############################################################################

@@ -2,18 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 2
-current_phase_name: Report & ICAO Resolution
-status: "Phase 1 shipped — PR #2"
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-08-24T18:17:22.171Z"
+status: "Phase 02 shipped — PR #3"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-08-25T00:01:25.708Z"
 last_activity: 2026-08-24
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-last_activity_desc: Phase 01 complete, transitioned to Phase 2
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -23,13 +20,13 @@ last_activity_desc: Phase 01 complete, transitioned to Phase 2
 See: .planning/PROJECT.md (updated 2026-08-24)
 
 **Core value:** A scriptable Ortho4XP — given an ICAO code (or a list), build the right tiles unattended, without opening the GUI.
-**Current focus:** Phase 1 — CLI Dispatch & Compatibility
+**Current focus:** Phase 02 — report-icao-resolution
 
 ## Current Position
 
-Phase: 2 of 3 (Report & ICAO Resolution)
+Phase: 3 — ICAO-Driven Build
 Plan: Not started
-Status: Phase 1 shipped — PR #2
+Status: Phase 02 shipped — PR #3
 Last activity: 2026-08-24
 
 Progress: [██████████] 100%
@@ -38,7 +35,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 1
+- Total plans completed: 4
 - Average duration: -
 - Total execution time: -
 
@@ -47,6 +44,7 @@ Progress: [██████████] 100%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 1 | - | - |
+| 02 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -55,6 +53,12 @@ Progress: [██████████] 100%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 10m | 2 tasks | 2 files |
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 02 P01 | ~15m | 2 tasks | 8 files |
+| Phase 02 P03 | 15m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -65,6 +69,7 @@ Recent decisions affecting current work:
 
 - Roadmap: BUILD-01 (ICAO resolver) moved into Phase 2 (Report) instead of Phase 3 (Build) — RPT-02 coverage-by-ICAO needs the resolver, and Phase 3's radius/batch builds can reuse it once proven.
 - Roadmap: user-directed phase order (CLI → Report → Build) used in place of research's suggested order (CLI → Report → Build was already the research recommendation; order matches).
+- [Phase ?]: Plan 02: off-grid 3x3 neighbors skipped (not raised); antimeridian/pole wraparound deferred to v1.x.
 
 ### Pending Todos
 
@@ -88,6 +93,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-24T16:33:50.925Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-08-24T22:25:47.180Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

@@ -15,7 +15,7 @@
 
 ### Build (ICAO-driven builds)
 
-- [ ] **BUILD-01**: User can resolve an ICAO code to lat/lon via `mcp_aviation_server`; an unreachable/unknown lookup fails with a clear message (and optional local fallback), never a silent wrong result.
+- [x] **BUILD-01**: User can resolve an ICAO code to lat/lon via `mcp_aviation_server`; an unreachable/unknown lookup fails with a clear message (and optional local fallback), never a silent wrong result.
 - [ ] **BUILD-02**: User can build the 1°×1° tile containing a given ICAO with a single command.
 - [ ] **BUILD-03**: User can pass `--radius N` to also build neighboring tiles within N whole tiles (Chebyshev square) of the ICAO's containing tile, correctly handling negative coords and antimeridian wraparound.
 - [ ] **BUILD-04**: User can build for multiple ICAOs in one invocation (e.g. `--icao KJFK,KLGA,KEWR`).
@@ -23,9 +23,9 @@
 
 ### Report (read-only terrain reporting)
 
-- [ ] **RPT-01**: User can list built tiles with provider, zoom level, build date, and on-disk size — read through `O4_File_Names` (FNAMES), never importing the build/config side-effect modules.
-- [ ] **RPT-02**: User can ask whether a given ICAO's tile(s) are already built (coverage-by-ICAO), reusing the BUILD-01 resolver and RPT-01 inventory.
-- [ ] **RPT-03**: User can get a health/staleness report flagging partial builds (missing DSF/DDS, crashed-run leftovers) and stale tiles, using one shared "is this tile complete" predicate.
+- [x] **RPT-01**: User can list built tiles with provider, zoom level, build date, and on-disk size — read through `O4_File_Names` (FNAMES), never importing the build/config side-effect modules.
+- [x] **RPT-02**: User can ask whether a given ICAO's tile(s) are already built (coverage-by-ICAO), reusing the BUILD-01 resolver and RPT-01 inventory.
+- [x] **RPT-03**: User can get a health/staleness report flagging partial builds (missing DSF/DDS, crashed-run leftovers) and stale tiles, using one shared "is this tile complete" predicate.
 
 ## v1.x Requirements (deferred)
 

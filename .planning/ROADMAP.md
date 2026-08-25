@@ -17,7 +17,7 @@ deliver ICAO-driven builds — single tile, radius, multi-ICAO, and list-file ba
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: CLI Dispatch & Compatibility** - Argparse migration with `--help` discoverability, preserving both frozen legacy invocations and replacing the bare "Crash!" handler with real errors. (completed 2026-08-24)
-- [ ] **Phase 2: Report & ICAO Resolution** - Read-only tile inventory, coverage-by-ICAO, and health/staleness reporting, backed by an ICAO→lat/lon resolver via `mcp_aviation_server`.
+- [x] **Phase 2: Report & ICAO Resolution** - Read-only tile inventory, coverage-by-ICAO, and health/staleness reporting, backed by an ICAO→lat/lon resolver via `mcp_aviation_server`. (completed 2026-08-24)
 - [ ] **Phase 3: ICAO-Driven Build** - Build a tile (or radius of tiles) around one or more ICAOs, from args or a list file, for unattended runs.
 
 ## Phase Details
@@ -53,7 +53,19 @@ Plans:
   3. User can ask whether a given ICAO's tile(s) are already built, using that same resolver against the tile inventory.
   4. User can run a health/staleness report that flags partial builds (missing DSF/DDS, crashed-run leftovers) and stale tiles via one shared "is this tile complete" predicate.
 
-**Plans**: TBD
+**Plans**: 3/3 plans executed
+Plans:
+**Wave 1**
+
+- [x] 02-01-PLAN.md — tracer: ICAO resolver + `report coverage --icao` end-to-end (containing tile), test harness, config var
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 02-02-PLAN.md — resolver 3-way error classification + full 3x3 coverage block
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 02-03-PLAN.md — `report tiles` inventory + `report health` (partial/crashed leftovers)
 
 ### Phase 3: ICAO-Driven Build
 
@@ -78,5 +90,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. CLI Dispatch & Compatibility | 1/1 | Complete    | 2026-08-24 |
-| 2. Report & ICAO Resolution | 0/TBD | Not started | - |
+| 2. Report & ICAO Resolution | 3/3 | Complete    | 2026-08-24 |
 | 3. ICAO-Driven Build | 0/TBD | Not started | - |
