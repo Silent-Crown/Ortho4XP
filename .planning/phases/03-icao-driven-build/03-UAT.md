@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 03-icao-driven-build
 source: [03-01-SUMMARY.md]
 started: 2026-08-25T00:00:00Z
@@ -69,8 +69,16 @@ blocked: 0
   reason: "User reported: build --icao ZZZZ,KJFK aborted on ZZZZ (AIRPORT_NOT_FOUND) — KJFK never built, no batch summary line. Unknown-ICAO error is treated as fatal instead of skip-and-continue."
   severity: major
   test: 7
-  artifacts: []
-  missing: []
+  root_cause: "resolve_icao maps only code=='AIRPORT_DETAILS_ERROR' to ICAONotFound; the real mcp_aviation_server returns code=='AIRPORT_NOT_FOUND' for an unknown ICAO, which falls through to `raise AviationServerUnreachable` (the D-11 abort path) instead of the D-10 skip path. Tests stayed green because conftest.py's not-found fixture hard-codes AIRPORT_DETAILS_ERROR — the mock encodes the bug."
+  artifacts:
+    - path: "src/O4_ICAO_Utils.py"
+      issue: "lines 106-112: not-found classified by wrong code string ('AIRPORT_DETAILS_ERROR'); real code 'AIRPORT_NOT_FOUND' falls through to AviationServerUnreachable"
+    - path: "tests/conftest.py"
+      issue: "lines 41-45: not-found fixture uses 'AIRPORT_DETAILS_ERROR', masking the mismatch"
+  missing:
+    - "resolve_icao must treat the server's real unknown-airport code ('AIRPORT_NOT_FOUND') as ICAONotFound, keeping other/unknown codes on the AviationServerUnreachable abort path"
+    - "Update conftest.py not-found fixture to the server's real code string so the test catches this"
+  debug_session: ""
 
 ## Deferred Follow-Ups
 
