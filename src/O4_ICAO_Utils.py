@@ -35,7 +35,7 @@ def _parse_body(resp):
             for ln in resp.text.splitlines()
             if ln.startswith("data:")
         ]
-        return json.loads("".join(chunks))
+        return json.loads("\n".join(chunks))
     return resp.json()
 
 
@@ -83,11 +83,21 @@ def resolve_icao(ident, base_url, timeout=10.0):
     env = _parse_body(resp)
     if "error" in env:  # JSON-RPC transport-level error
         raise AviationServerUnreachable(f"aviation server error: {env['error']}")
-    payload = json.loads(env["result"]["content"][0]["text"])
+    try:
+        payload = json.loads(env["result"]["content"][0]["text"])
+    except (KeyError, IndexError, TypeError, ValueError) as e:
+        raise AviationServerUnreachable(
+            f"aviation server returned an unparseable response: {e}"
+        )
     if payload.get("airport"):
-        coords = payload["airport"]["coordinates"]
-        lat = float(coords["latitude"])
-        lon = float(coords["longitude"])
+        try:
+            coords = payload["airport"]["coordinates"]
+            lat = float(coords["latitude"])
+            lon = float(coords["longitude"])
+        except (KeyError, TypeError, ValueError) as e:
+            raise AviationServerUnreachable(
+                f"aviation server returned malformed coordinates: {e}"
+            )
         if not _valid(lat, -90, 90) or not _valid(lon, -180, 180):
             raise AviationServerUnreachable(
                 f"aviation server returned invalid coordinates: {lat}, {lon}"

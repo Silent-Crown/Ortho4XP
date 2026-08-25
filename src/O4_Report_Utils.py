@@ -215,7 +215,7 @@ def report_coverage(icao):
     ident = icao.strip().upper()
     try:
         lat_f, lon_f = ICAO.resolve_icao(ident, ICAO.get_server_url())
-    except (ICAO.AviationServerUnreachable, ICAO.ICAONotFound) as e:
+    except (ICAO.AviationServerUnreachable, ICAO.ICAONotFound, ValueError) as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)
     for lat, lon in coverage_tiles(lat_f, lon_f):
