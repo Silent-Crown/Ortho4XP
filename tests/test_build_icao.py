@@ -54,9 +54,10 @@ def test_dispatch_single_icao_builds_containing_tile(monkeypatch):
 
 
 def test_dispatch_legacy_positional_still_builds(monkeypatch):
+    # Legacy path forwards raw positional strings; run_build floors them itself.
     calls = _recorder(monkeypatch)
     CLI.dispatch(["build", "40", "-74"])
-    assert calls == [(40, -74)]
+    assert calls == [("40", "-74")]
 
 
 def test_dispatch_positional_plus_icao_is_usage_error(monkeypatch):
