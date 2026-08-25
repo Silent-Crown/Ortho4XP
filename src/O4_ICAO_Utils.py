@@ -104,7 +104,9 @@ def resolve_icao(ident, base_url, timeout=10.0):
             )
         return lat, lon
     code = payload.get("code")
-    if code == "AIRPORT_DETAILS_ERROR":
+    # Real mcp_aviation_server returns AIRPORT_NOT_FOUND for an unknown ICAO
+    # (G-03-7); AIRPORT_DETAILS_ERROR kept in case both are live server codes.
+    if code in ("AIRPORT_NOT_FOUND", "AIRPORT_DETAILS_ERROR"):
         raise ICAONotFound(f"ICAO {ident} not found")
     # SIM_DB_UNAVAILABLE and any other server-side code -> unreachable family.
     raise AviationServerUnreachable(
