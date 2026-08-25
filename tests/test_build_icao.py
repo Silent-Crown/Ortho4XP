@@ -192,3 +192,33 @@ def test_batch_all_success_exits_zero(monkeypatch):
     # exit 0 == clean return, no SystemExit
     CLI.dispatch(["build", "--icao", "KJFK"])
     assert calls == [(40, -74)]
+
+
+# --------------------------------------------------------------------------- #
+# G-03-7: end-to-end batch skip through the REAL resolver (no ICAO.resolve_icao
+# monkeypatch) — proves the real server not-found code reaches the skip branch.
+# --------------------------------------------------------------------------- #
+def test_batch_unknown_icao_real_resolver_skips_and_summarizes(
+        monkeypatch, capsys):
+    import requests
+    import conftest
+
+    def _fake_post(self, url, headers=None, timeout=None, json=None):
+        body = json or {}
+        if body.get("method") == "tools/call":
+            ident = body["params"]["arguments"]["ident"]
+            text = conftest.SSE_SUCCESS if ident == "KJFK" else conftest.SSE_NOT_FOUND
+            return conftest.FakeResponse(text)
+        # initialize handshake: hand back a session id, minimal valid envelope
+        return conftest.FakeResponse(
+            conftest.SSE_SUCCESS, headers={"Mcp-Session-Id": "sid-1"})
+
+    monkeypatch.setattr(requests.Session, "post", _fake_post)
+    monkeypatch.setattr(ICAO, "get_server_url", lambda: "http://x/mcp")
+    calls = _recorder(monkeypatch)
+
+    with pytest.raises(SystemExit) as exc:
+        CLI.dispatch(["build", "--icao", "ZZZZ,KJFK"])
+    assert exc.value.code == 1
+    assert calls == [(40, -74)]  # KJFK still built, ZZZZ skipped
+    assert "1/2 ICAOs resolved" in capsys.readouterr().out
