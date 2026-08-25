@@ -16,10 +16,10 @@
 ### Build (ICAO-driven builds)
 
 - [x] **BUILD-01**: User can resolve an ICAO code to lat/lon via `mcp_aviation_server`; an unreachable/unknown lookup fails with a clear message (and optional local fallback), never a silent wrong result.
-- [ ] **BUILD-02**: User can build the 1°×1° tile containing a given ICAO with a single command.
-- [ ] **BUILD-03**: User can pass `--radius N` to also build neighboring tiles within N whole tiles (Chebyshev square) of the ICAO's containing tile, correctly handling negative coords and antimeridian wraparound.
-- [ ] **BUILD-04**: User can build for multiple ICAOs in one invocation (e.g. `--icao KJFK,KLGA,KEWR`).
-- [ ] **BUILD-05**: User can build from a list file of ICAOs (one per line, `#` comments ignored) for unattended/scheduled runs.
+- [x] **BUILD-02**: User can build the 1°×1° tile containing a given ICAO with a single command.
+- [x] **BUILD-03**: User can pass `--radius N` to also build neighboring tiles within N whole tiles (Chebyshev square) of the ICAO's containing tile, correctly handling negative coords and antimeridian wraparound.
+- [x] **BUILD-04**: User can build for multiple ICAOs in one invocation (e.g. `--icao KJFK,KLGA,KEWR`).
+- [x] **BUILD-05**: User can build from a list file of ICAOs (one per line, `#` comments ignored) for unattended/scheduled runs.
 
 ### Report (read-only terrain reporting)
 

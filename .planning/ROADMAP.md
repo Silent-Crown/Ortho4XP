@@ -80,7 +80,11 @@ Plans:
   3. User can build for multiple ICAOs in one invocation (e.g. `--icao KJFK,KLGA,KEWR`).
   4. User can point the build command at a list file of ICAOs (one per line, `#` comments ignored) for unattended/scheduled runs.
 
-**Plans**: TBD
+**Plans**: 1/1 plans executed
+Plans:
+**Wave 1**
+
+- [x] 03-01-PLAN.md — tracer single-ICAO build, then --radius Chebyshev + multi-ICAO/list-file batch with failure policy
 
 ## Progress
 
@@ -91,4 +95,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. CLI Dispatch & Compatibility | 1/1 | Complete    | 2026-08-24 |
 | 2. Report & ICAO Resolution | 3/3 | Complete    | 2026-08-24 |
-| 3. ICAO-Driven Build | 0/TBD | Not started | - |
+| 3. ICAO-Driven Build | 1/1 | In Progress|  |
