@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 03-icao-driven-build
-source: [03-01-SUMMARY.md]
+source: [03-01-SUMMARY.md, 03-02-SUMMARY.md]
 started: 2026-08-25T00:00:00Z
-updated: 2026-08-25T01:00:00Z
+updated: 2026-08-25T02:00:00Z
 ---
 
 ## Current Test
@@ -40,9 +40,8 @@ result: pass
 
 ### 7. Unknown ICAO skips and summarizes
 expected: An unknown code (e.g. `--icao ZZZZ,KJFK`) skips the bad one, still builds the good one, summary notes the skip, exit 1.
-result: issue
-reported: "python Ortho4XP.py build --icao ZZZZ,KJFK → 'aviation server could not answer (AIRPORT_NOT_FOUND): Airport not found: ZZZZ' then returned to prompt. No KJFK build, no batch summary line — the whole batch aborted on the bad code instead of skipping it."
-severity: major
+result: pass
+retested: "2026-08-25 after G-03-7 fix: build --icao ZZZZ,KJFK printed 'skipping ZZZZ: ICAO ZZZZ not found', built tile +40-074 (KJFK) through all 4 stages incl. DSF, and ended 'batch: 1/2 ICAOs resolved, 1 tiles built, 0 failed'. Skip-and-continue confirmed end-to-end."
 
 ### 8. Server unreachable aborts before building
 expected: When the aviation server is unreachable, the run aborts before any tile is built with a clear message; no partial builds.
@@ -55,8 +54,8 @@ result: pass
 ## Summary
 
 total: 9
-passed: 7
-issues: 1
+passed: 8
+issues: 0
 pending: 0
 skipped: 1
 blocked: 0
@@ -65,7 +64,9 @@ blocked: 0
 
 - gap_id: G-03-7
   truth: "An unknown ICAO in a batch is skipped (D-10); resolvable codes still build; a summary reports the skip; exit 1."
-  status: failed
+  status: closed
+  closed_by: 03-02
+  closed_at: 2026-08-25
   reason: "User reported: build --icao ZZZZ,KJFK aborted on ZZZZ (AIRPORT_NOT_FOUND) — KJFK never built, no batch summary line. Unknown-ICAO error is treated as fatal instead of skip-and-continue."
   severity: major
   test: 7
