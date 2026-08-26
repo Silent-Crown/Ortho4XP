@@ -170,6 +170,9 @@ def _validate_build(parser, args):
         parser.error("--radius requires an ICAO source")
     if args.radius < 0:
         parser.error("--radius must be >= 0")
+    if not args.high_zl and (args.cover_zl is not None
+                             or args.cover_extent is not None):
+        parser.error("--cover-zl/--cover-extent require --high-zl")
 
 
 ##############################################################################
@@ -201,7 +204,7 @@ def build_parser():
     build_p.add_argument("--zl", type=int, default=None, help="Zoom level")
     build_p.add_argument("--high-zl", dest="high_zl", action="store_true",
                          help="Upgrade airport textures to higher zoom level "
-                              "(sets cover_airports_with_highres=ICAO)")
+                              "(sets cover_airports_with_highres=True)")
     build_p.add_argument("--cover-zl", dest="cover_zl", type=int, default=None,
                          help="Zoom level to cover airports with when --high-zl is set")
     build_p.add_argument("--cover-extent", dest="cover_extent", type=float, default=None,
@@ -266,7 +269,7 @@ def run_build(lat, lon, provider=None, zl=None, build_dir="", high_zl=False,
     if zl is not None:
         tile.default_zl = zl
     if high_zl:
-        tile.cover_airports_with_highres = "ICAO"
+        tile.cover_airports_with_highres = "True"
     if cover_zl is not None:
         tile.cover_zl = cover_zl
     if cover_extent is not None:
@@ -404,4 +407,12 @@ if __name__ == "__main__":
     _nhz = build_parser().parse_args(["build", "47", "-122"])
     assert (_nhz.high_zl is False and _nhz.cover_zl is None
             and _nhz.cover_extent is None)
+    # --cover-zl without --high-zl is a usage error (parser.error -> exit 2)
+    _p = build_parser()
+    try:
+        _validate_build(_p, _p.parse_args(["build", "47", "-122", "--cover-zl", "19"]))
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("--cover-zl without --high-zl should error")
     print("O4_CLI_Utils self-check OK")
