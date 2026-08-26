@@ -96,7 +96,7 @@ def iter_tiles(store=""):
     names are ignored. ``store`` selects the tile store (empty = default
     ./Tiles). Yields nothing when the store dir is absent.
     """
-    root = _store_root(store).rstrip("/\\") if store else FNAMES.Tile_dir
+    root = store.rstrip("/\\") if store else FNAMES.Tile_dir
     if not os.path.isdir(root):
         return
     for entry in os.scandir(root):
