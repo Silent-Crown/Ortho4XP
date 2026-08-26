@@ -40,7 +40,7 @@ _SUCCESS_INNER = {
 }
 _NOT_FOUND_INNER = {
     "error": "Airport not found: ZZZZ",
-    "code": "AIRPORT_DETAILS_ERROR",
+    "code": "AIRPORT_NOT_FOUND",
     "details": None,
 }
 _DB_DOWN_INNER = {

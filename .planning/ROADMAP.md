@@ -16,7 +16,8 @@ deliver ICAO-driven builds — single tile, radius, multi-ICAO, and list-file ba
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [x] **Phase 1: CLI Dispatch & Compatibility** - Argparse migration with `--help` discoverability, preserving both frozen legacy invocations and replacing the bare "Crash!" handler with real errors. (completed 2026-08-24)
+- [x] **Phase 1: CLI Dispatch & Compatibility** - Argparse migration with `--help` discoverability, preserving both frozen legacy invocations and replacing the bare "Crash!" handler with real errors.
+ (completed 2026-08-24)
 - [x] **Phase 2: Report & ICAO Resolution** - Read-only tile inventory, coverage-by-ICAO, and health/staleness reporting, backed by an ICAO→lat/lon resolver via `mcp_aviation_server`. (completed 2026-08-24)
 - [ ] **Phase 3: ICAO-Driven Build** - Build a tile (or radius of tiles) around one or more ICAOs, from args or a list file, for unattended runs.
 
@@ -80,7 +81,12 @@ Plans:
   3. User can build for multiple ICAOs in one invocation (e.g. `--icao KJFK,KLGA,KEWR`).
   4. User can point the build command at a list file of ICAOs (one per line, `#` comments ignored) for unattended/scheduled runs.
 
-**Plans**: TBD
+**Plans**: 2/2 plans executed
+Plans:
+**Wave 1**
+
+- [x] 03-01-PLAN.md — tracer single-ICAO build, then --radius Chebyshev + multi-ICAO/list-file batch with failure policy
+- [x] 03-02-PLAN.md — gap G-03-7: classify real server `AIRPORT_NOT_FOUND` as ICAONotFound so an unknown ICAO skips-and-continues (D-10)
 
 ## Progress
 
@@ -91,4 +97,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. CLI Dispatch & Compatibility | 1/1 | Complete    | 2026-08-24 |
 | 2. Report & ICAO Resolution | 3/3 | Complete    | 2026-08-24 |
-| 3. ICAO-Driven Build | 0/TBD | Not started | - |
+| 3. ICAO-Driven Build | 2/2 | Complete    | 2026-08-25 |
