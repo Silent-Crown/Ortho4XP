@@ -206,12 +206,21 @@ def build_parser():
         "report", help="Report on already-built tiles (read-only)"
     )
     report_sub = report_p.add_subparsers(dest="report_cmd", required=True)
-    report_sub.add_parser("tiles", help="List built/partial/missing tiles")
+
+    def _add_build_dir(p):
+        p.add_argument("--build-dir", dest="build_dir", default="",
+                       help="Tile store to report on (GUI 'Base Folder'); "
+                            "default ./Tiles")
+
+    tiles_p = report_sub.add_parser("tiles", help="List built/partial/missing tiles")
+    _add_build_dir(tiles_p)
     cov_p = report_sub.add_parser(
         "coverage", help="Report coverage of an ICAO's containing tile"
     )
     cov_p.add_argument("--icao", required=True, help="ICAO airport code")
-    report_sub.add_parser("health", help="Report crashed-run leftovers")
+    _add_build_dir(cov_p)
+    health_p = report_sub.add_parser("health", help="Report crashed-run leftovers")
+    _add_build_dir(health_p)
 
     return parser
 
@@ -322,11 +331,11 @@ def dispatch(argv):
                            args.zl, args.build_dir)
     elif args.command == "report":
         if args.report_cmd == "coverage":
-            run_and_report(RPT.report_coverage, args.icao)
+            run_and_report(RPT.report_coverage, args.icao, args.build_dir)
         elif args.report_cmd == "tiles":
-            run_and_report(RPT.report_tiles)
+            run_and_report(RPT.report_tiles, args.build_dir)
         elif args.report_cmd == "health":
-            run_and_report(RPT.report_health)
+            run_and_report(RPT.report_health, args.build_dir)
 
 
 ##############################################################################
@@ -355,6 +364,9 @@ if __name__ == "__main__":
     assert _a.build_dir == ""  # default: use ./Tiles store
     _b = build_parser().parse_args(["build", "47", "-122", "--build-dir", "D:/xp/"])
     assert _b.build_dir == "D:/xp/"
+    _r = build_parser().parse_args(["report", "tiles", "--build-dir", "D:/xp/"])
+    assert _r.build_dir == "D:/xp/"
+    assert build_parser().parse_args(["report", "health"]).build_dir == ""
     assert neighbor_tiles(40.64, -73.78, 0) == [(40, -74)]
     assert len(neighbor_tiles(40.5, -73.5, 1)) == 9
     assert (0, -180) in neighbor_tiles(0.5, 179.5, 1)  # antimeridian wrap

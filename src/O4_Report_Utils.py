@@ -31,13 +31,23 @@ def read_cfg(path):
     return result
 
 
-def tile_status(lat, lon):
+def _store_root(store):
+    """Normalize a tile-store root: empty stays empty (default ./Tiles); a
+    non-empty root gets a trailing separator so FNAMES.build_dir nests each
+    tile under it instead of treating it as one literal per-tile dir."""
+    if store and not store.endswith(("/", "\\")):
+        return store + "/"
+    return store
+
+
+def tile_status(lat, lon, store=""):
     """The D-05 predicate: ``missing`` / ``built`` / ``partial`` for one tile.
 
     ``built`` requires a non-empty DSF AND a non-empty ``textures/`` dir; a build
     dir that exists but fails either check is ``partial`` (never ``built``).
+    ``store`` selects the tile store (empty = default ./Tiles).
     """
-    build_dir = FNAMES.build_dir(lat, lon, "")
+    build_dir = FNAMES.build_dir(lat, lon, _store_root(store))
     if not os.path.isdir(build_dir):
         return "missing"
     dsf = FNAMES.dsf_file(build_dir, lat, lon)
@@ -49,15 +59,17 @@ def tile_status(lat, lon):
     return "partial"
 
 
-def iter_tiles():
-    """Yield ``(lat, lon, path)`` for every ``zOrtho4XP_<latlon>`` dir in Tiles/.
+def iter_tiles(store=""):
+    """Yield ``(lat, lon, path)`` for every ``zOrtho4XP_<latlon>`` dir in the store.
 
     lat/lon are ints recovered from the strict regex; non-matching directory
-    names are ignored. Yields nothing when ``Tile_dir`` is absent.
+    names are ignored. ``store`` selects the tile store (empty = default
+    ./Tiles). Yields nothing when the store dir is absent.
     """
-    if not os.path.isdir(FNAMES.Tile_dir):
+    root = _store_root(store).rstrip("/\\") if store else FNAMES.Tile_dir
+    if not os.path.isdir(root):
         return
-    for entry in os.scandir(FNAMES.Tile_dir):
+    for entry in os.scandir(root):
         if not entry.is_dir():
             continue
         m = _TILE_RE.match(entry.name)
@@ -99,15 +111,15 @@ def _human_size(n):
         size /= 1024
 
 
-def report_tiles():
+def report_tiles(store=""):
     """Print an aligned inventory of built tiles: latlon, provider, zoom, date, size.
 
-    Rows are (lat, lon)-sorted (deterministic). An absent/empty Tiles/ prints a
+    Rows are (lat, lon)-sorted (deterministic). An absent/empty store prints a
     single clean "no tiles built" line. Read-only (D-06).
     """
     import time
 
-    tiles = sorted(iter_tiles(), key=lambda t: (t[0], t[1]))
+    tiles = sorted(iter_tiles(store), key=lambda t: (t[0], t[1]))
     if not tiles:
         print("no tiles built")
         return
@@ -152,16 +164,16 @@ def tile_leftovers(build_dir, lat, lon):
     return classes
 
 
-def report_health():
+def report_health(store=""):
     """Flag partial tiles + their orphan classes and a global tmp/ leftover.
 
     Reuses the D-05 ``tile_status`` predicate; no time-based staleness (D-06).
     Read-only — deletes/moves nothing. Prints a clean "no issues" line when
-    nothing is flagged.
+    nothing is flagged. ``store`` selects the tile store (empty = default ./Tiles).
     """
     flagged = []
-    for lat, lon, path in sorted(iter_tiles(), key=lambda t: (t[0], t[1])):
-        if tile_status(lat, lon) != "partial":
+    for lat, lon, path in sorted(iter_tiles(store), key=lambda t: (t[0], t[1])):
+        if tile_status(lat, lon, store) != "partial":
             continue
         classes = tile_leftovers(path, lat, lon) or ["partial"]
         flagged.append((lat, lon, classes))
@@ -201,12 +213,13 @@ def coverage_tiles(lat, lon):
             yield nlat, nlon
 
 
-def report_coverage(icao):
+def report_coverage(icao, store=""):
     """Resolve an ICAO and print the built/partial/missing status of its 3x3 block.
 
     Reports the containing tile plus its 8 neighbors (D-11). The two resolver
     failures fail loud on a single stderr line with a non-zero exit (D-04) — no
-    traceback, no coordinate, no tile rows.
+    traceback, no coordinate, no tile rows. ``store`` selects the tile store
+    (empty = default ./Tiles).
     """
     import sys
 
@@ -220,7 +233,7 @@ def report_coverage(icao):
         sys.exit(1)
     for lat, lon in coverage_tiles(lat_f, lon_f):
         print(f"{ident:<8} {FNAMES.short_latlon(lat, lon):<9} "
-              f"{tile_status(lat, lon)}")
+              f"{tile_status(lat, lon, store)}")
 
 
 if __name__ == "__main__":
