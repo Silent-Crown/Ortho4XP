@@ -109,6 +109,98 @@ class QuadTree(dict):
 ################################################################################
 
 ################################################################################
+def airport_cover_boxes(tile):
+    """Tile-relative (xmin, xmax, ymin, ymax) rectangles, clamped to [0,1] and
+    snapped to cover_zl texture-tile boundaries, one per airport that will be
+    upgraded to cover_zl imagery.
+
+    Empty unless cover_airports_with_highres is active. Shared by
+    zone_list_to_ortho_dico (mask marking) and airport_cover_zone_list (CLI
+    preview zones) so both describe the exact same covered area.
+    """
+    boxes = []
+    if tile.cover_airports_with_highres not in ("True", "ICAO"):
+        return boxes
+    UI.vprint(1, "-> Checking airport locations for upgraded zoomlevel.")
+    try:
+        f = open(FNAMES.apt_file(tile), "rb")
+        dico_airports = pickle.load(f)
+        f.close()
+    except:
+        UI.vprint(
+            1,
+            "   WARNING: File",
+            FNAMES.apt_file(tile),
+            "is missing (erased after Step 1?), cannot check airport info ",
+            "for upgraded zoomlevel.",
+        )
+        dico_airports = {}
+    only = getattr(tile, "cover_airports_list", None)
+    if only:
+        # Restrict to named airports (e.g. the ICAO the build was requested for),
+        # matched case-insensitively against the apt dict keys.
+        wanted = {a.upper() for a in only}
+        airports_list = [
+            airport
+            for airport in dico_airports
+            if str(airport).upper() in wanted
+        ]
+    elif tile.cover_airports_with_highres == "ICAO":
+        airports_list = [
+            airport
+            for airport in dico_airports
+            if dico_airports[airport]["key_type"] == "icao"
+        ]
+    else:
+        airports_list = dico_airports.keys()
+    for airport in airports_list:
+        (xmin, ymin, xmax, ymax) = dico_airports[airport]["boundary"].bounds
+        # extension
+        xmin -= 1000 * tile.cover_extent * GEO.m_to_lon(tile.lat)
+        xmax += 1000 * tile.cover_extent * GEO.m_to_lon(tile.lat)
+        ymax += 1000 * tile.cover_extent * GEO.m_to_lat
+        ymin -= 1000 * tile.cover_extent * GEO.m_to_lat
+        # round off to texture boundaries at tile.cover_zl zoomlevel
+        (til_x_left, til_y_top) = GEO.wgs84_to_orthogrid(
+            ymax + tile.lat, xmin + tile.lon, tile.cover_zl
+        )
+        (ymax, xmin) = GEO.gtile_to_wgs84(
+            til_x_left, til_y_top, tile.cover_zl
+        )
+        ymax -= tile.lat
+        xmin -= tile.lon
+        (til_x_left2, til_y_top2) = GEO.wgs84_to_orthogrid(
+            ymin + tile.lat, xmax + tile.lon, tile.cover_zl
+        )
+        (ymin, xmax) = GEO.gtile_to_wgs84(
+            til_x_left2 + 16, til_y_top2 + 16, tile.cover_zl
+        )
+        ymin -= tile.lat
+        xmax -= tile.lon
+        xmin = max(0, xmin)
+        xmax = min(1, xmax)
+        ymin = max(0, ymin)
+        ymax = min(1, ymax)
+        boxes.append((xmin, xmax, ymin, ymax))
+    return boxes
+
+
+def airport_cover_zone_list(tile):
+    """zone_list entries mirroring the airport high-res cover rectangles, so the
+    covered area shows as a custom-zoom zone in the GUI preview.
+
+    Each entry is [ring, cover_zl, provider] with ring a flat, closed
+    [lat,lon,...] list (same shape as GUI-drawn zones).
+    """
+    zones = []
+    for (xmin, xmax, ymin, ymax) in airport_cover_boxes(tile):
+        lat0, lat1 = tile.lat + ymin, tile.lat + ymax
+        lon0, lon1 = tile.lon + xmin, tile.lon + xmax
+        ring = [lat0, lon0, lat0, lon1, lat1, lon1, lat1, lon0, lat0, lon0]
+        zones.append([ring, tile.cover_zl, tile.default_website])
+    return zones
+
+
 def zone_list_to_ortho_dico(tile):
     # tile.zone_list is a list of 3-uples of the form
     # ([(lat0,lat0), ... ,(latN,lonN)], zoomlevel, provider_code)
@@ -116,63 +208,13 @@ def zone_list_to_ortho_dico(tile):
     masks_im = Image.new("L", (4096, 4096), "black")
     masks_draw = ImageDraw.Draw(masks_im)
     airport_array = numpy.zeros((4096, 4096), dtype=numpy.bool_)
-    if tile.cover_airports_with_highres in ("True", "ICAO"):
-        UI.vprint(1, "-> Checking airport locations for upgraded zoomlevel.")
-        try:
-            f = open(FNAMES.apt_file(tile), "rb")
-            dico_airports = pickle.load(f)
-            f.close()
-        except:
-            UI.vprint(
-                1,
-                "   WARNING: File",
-                FNAMES.apt_file(tile),
-                "is missing (erased after Step 1?), cannot check airport info ",
-                "for upgraded zoomlevel.",
-            )
-            dico_airports = {}
-        if tile.cover_airports_with_highres == "ICAO":
-            airports_list = [
-                airport
-                for airport in dico_airports
-                if dico_airports[airport]["key_type"] == "icao"
-            ]
-        else:
-            airports_list = dico_airports.keys()
-        for airport in airports_list:
-            (xmin, ymin, xmax, ymax) = dico_airports[airport]["boundary"].bounds
-            # extension
-            xmin -= 1000 * tile.cover_extent * GEO.m_to_lon(tile.lat)
-            xmax += 1000 * tile.cover_extent * GEO.m_to_lon(tile.lat)
-            ymax += 1000 * tile.cover_extent * GEO.m_to_lat
-            ymin -= 1000 * tile.cover_extent * GEO.m_to_lat
-            # round off to texture boundaries at tile.cover_zl zoomlevel
-            (til_x_left, til_y_top) = GEO.wgs84_to_orthogrid(
-                ymax + tile.lat, xmin + tile.lon, tile.cover_zl
-            )
-            (ymax, xmin) = GEO.gtile_to_wgs84(
-                til_x_left, til_y_top, tile.cover_zl
-            )
-            ymax -= tile.lat
-            xmin -= tile.lon
-            (til_x_left2, til_y_top2) = GEO.wgs84_to_orthogrid(
-                ymin + tile.lat, xmax + tile.lon, tile.cover_zl
-            )
-            (ymin, xmax) = GEO.gtile_to_wgs84(
-                til_x_left2 + 16, til_y_top2 + 16, tile.cover_zl
-            )
-            ymin -= tile.lat
-            xmax -= tile.lon
-            xmin = max(0, xmin)
-            xmax = min(1, xmax)
-            ymin = max(0, ymin)
-            ymax = min(1, ymax)
-            # mark to airport_array
-            colmin = round(xmin * 4095)
-            colmax = round(xmax * 4095)
-            rowmax = round((1 - ymin) * 4095)
-            rowmin = round((1 - ymax) * 4095)
-            airport_array[rowmin : rowmax + 1, colmin : colmax + 1] = 1
+    for (xmin, xmax, ymin, ymax) in airport_cover_boxes(tile):
+        # mark to airport_array
+        colmin = round(xmin * 4095)
+        colmax = round(xmax * 4095)
+        rowmax = round((1 - ymin) * 4095)
+        rowmin = round((1 - ymax) * 4095)
+        airport_array[rowmin : rowmax + 1, colmin : colmax + 1] = 1
     dico_customzl = {}
     dico_tmp = {}
     til_x_min, til_y_min = GEO.wgs84_to_orthogrid(

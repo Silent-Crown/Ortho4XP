@@ -99,7 +99,8 @@ def parse_icao_args(icao, icao_file):
 
 ##############################################################################
 def run_batch_build(idents, radius, provider=None, zl=None, build_dir="",
-                     high_zl=False, cover_zl=None, cover_extent=None):
+                     high_zl=False, cover_zl=None, cover_extent=None,
+                     preview_zones=True, cover_all_airports=False):
     """Resolve every ICAO, assemble a unique sorted tile set, build each once.
 
     Resolves ALL idents before building any tile so an abort leaves no partial
@@ -139,11 +140,15 @@ def run_batch_build(idents, radius, provider=None, zl=None, build_dir="",
             continue
         tiles.update(expanded)
 
+    # By default cover only the requested airports; --cover-all-airports keeps
+    # the legacy "every airport in the tile" behavior. Each tile's apt holds
+    # only airports inside it, so passing the whole ident set is safe.
+    cover_list = None if cover_all_airports else idents
     built = failed = 0
     for lat, lon in sorted(tiles):
         try:
             run_build(lat, lon, provider, zl, build_dir, high_zl, cover_zl,
-                      cover_extent)
+                      cover_extent, preview_zones, cover_list)
             built += 1
         except Exception as e:  # D-12: log and continue to the next tile
             print(f"tile ({lat},{lon}) failed: {e}", file=sys.stderr)
@@ -212,6 +217,16 @@ def build_parser():
     build_p.add_argument("--cover-extent", dest="cover_extent", type=float, default=None,
                          help="Margin in km past the airport boundary for the "
                               "high-zl zone (default: the cover_extent config value)")
+    build_p.add_argument("--cover-all-airports", dest="cover_all_airports",
+                         action="store_true",
+                         help="With --high-zl on an ICAO build, cover every "
+                              "airport in the tile, not just the named one(s) "
+                              "(default: only the requested ICAO airports)")
+    build_p.add_argument("--no-preview-zones", dest="preview_zones",
+                         action="store_false",
+                         help="Do not write airport high-res cover rectangles "
+                              "into the tile's zone_list (they are written by "
+                              "default so the GUI preview shows them)")
     build_p.add_argument("--build-dir", dest="build_dir", default="",
                          help="Tile store (GUI 'Base Folder'); default ./Tiles. "
                               "End with / or \\ to nest tiles under a base folder")
@@ -244,8 +259,42 @@ def build_parser():
 
 
 ##############################################################################
+def _write_preview_zones(tile):
+    """Persist airport high-res cover rectangles into the tile's zone_list so the
+    GUI map preview shows them as custom-zoom zones. Rewrites just the
+    zone_list= line in the per-tile cfg the build already wrote; no-op if there
+    is nothing to cover (e.g. cover disabled, or the apt file was cleaned)."""
+    import os
+    import O4_File_Names as FNAMES
+    import O4_DSF_Utils as DSF
+
+    zones = DSF.airport_cover_zone_list(tile)
+    if not zones:
+        return
+    cfg_path = os.path.join(
+        tile.build_dir,
+        "Ortho4XP_" + FNAMES.short_latlon(tile.lat, tile.lon) + ".cfg",
+    )
+    try:
+        with open(cfg_path, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return
+    new_line = "zone_list=" + str(zones) + "\n"
+    for i, line in enumerate(lines):
+        if line.startswith("zone_list="):
+            lines[i] = new_line
+            break
+    else:
+        lines.append(new_line)
+    with open(cfg_path, "w") as f:
+        f.writelines(lines)
+    print(f"preview zones: wrote {len(zones)} airport cover zone(s) to {cfg_path}")
+
+
 def run_build(lat, lon, provider=None, zl=None, build_dir="", high_zl=False,
-              cover_zl=None, cover_extent=None):
+              cover_zl=None, cover_extent=None, preview_zones=True,
+              cover_airports_list=None):
     """Floor/validate coordinates, construct the Tile, run the 4-stage pipeline.
 
     Build-module imports are done lazily here (not at module top) to preserve
@@ -272,6 +321,9 @@ def run_build(lat, lon, provider=None, zl=None, build_dir="", high_zl=False,
         tile.default_zl = zl
     if high_zl:
         tile.cover_airports_with_highres = "True"
+        # Limit high-res cover to the named airport(s) rather than every airport
+        # in the tile; empty/None means cover all (legacy behavior).
+        tile.cover_airports_list = cover_airports_list
     if cover_zl is not None:
         tile.cover_zl = cover_zl
     if cover_extent is not None:
@@ -280,6 +332,8 @@ def run_build(lat, lon, provider=None, zl=None, build_dir="", high_zl=False,
     MESH.build_mesh(tile)
     MASK.build_masks(tile)
     TILE.build_tile(tile)
+    if preview_zones:
+        _write_preview_zones(tile)
     print("Bon vol!")
 
 
@@ -351,11 +405,13 @@ def dispatch(argv):
             idents = parse_icao_args(args.icao, args.icao_file)
             run_and_report(run_batch_build, idents, args.radius,
                            args.provider, args.zl, args.build_dir,
-                           args.high_zl, args.cover_zl, args.cover_extent)
+                           args.high_zl, args.cover_zl, args.cover_extent,
+                           args.preview_zones, args.cover_all_airports)
         else:
             run_and_report(run_build, args.lat, args.lon, args.provider,
                            args.zl, args.build_dir,
-                           args.high_zl, args.cover_zl, args.cover_extent)
+                           args.high_zl, args.cover_zl, args.cover_extent,
+                           args.preview_zones)
     elif args.command == "report":
         if args.report_cmd == "coverage":
             run_and_report(RPT.report_coverage, args.icao, args.build_dir)
@@ -409,6 +465,15 @@ if __name__ == "__main__":
     _nhz = build_parser().parse_args(["build", "47", "-122"])
     assert (_nhz.high_zl is False and _nhz.cover_zl is None
             and _nhz.cover_extent is None)
+    # preview zones default ON; --no-preview-zones opts out
+    assert build_parser().parse_args(["build", "47", "-122"]).preview_zones is True
+    assert build_parser().parse_args(
+        ["build", "47", "-122", "--no-preview-zones"]).preview_zones is False
+    # cover only the named airport by default; --cover-all-airports opts out
+    assert build_parser().parse_args(
+        ["build", "--icao", "KILM"]).cover_all_airports is False
+    assert build_parser().parse_args(
+        ["build", "--icao", "KILM", "--cover-all-airports"]).cover_all_airports is True
     # --cover-zl without --high-zl is a usage error (parser.error -> exit 2)
     _p = build_parser()
     try:
