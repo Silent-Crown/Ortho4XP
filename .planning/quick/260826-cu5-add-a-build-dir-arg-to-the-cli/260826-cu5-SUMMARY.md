@@ -18,19 +18,31 @@ per-tile dir. Batch builds force base-folder semantics so tiles don't collide.
 
 Legacy `lat lon [provider zl]` path is unchanged (still uses the default store).
 
+Report side (`report tiles`/`coverage`/`health`) also accepts `--build-dir` to
+point at a non-default store. A `store` root threads through
+`iter_tiles`/`tile_status` and the three report entry points; empty = ./Tiles.
+
 ## Files
 
-- `src/O4_CLI_Utils.py` — build_dir param on run_build/run_batch_build, new
-  `--build-dir` arg, dispatch wiring, batch base-folder guard, self-check asserts.
+- `src/O4_CLI_Utils.py` — build_dir on run_build/run_batch_build + `--build-dir`
+  on the `build` subparser; `--build-dir` on all three `report` subparsers;
+  dispatch wiring; batch base-folder guard; self-check asserts.
+- `src/O4_Report_Utils.py` — `store` param on report_tiles/report_coverage/
+  report_health/iter_tiles/tile_status; `_store_root` normalizer.
 
 ## Verification
 
-`python src/O4_CLI_Utils.py` self-check → `O4_CLI_Utils self-check OK`.
+Both self-checks pass (`O4_CLI_Utils self-check OK`, `O4_Report_Utils self-check
+OK`). Functional: `report_tiles`/`report_health` against a temp store dir
+correctly list tiles from that store instead of ./Tiles.
 
 ## Usage
 
 ```
 python Ortho4XP.py build 47 -122 --build-dir D:/xp_tiles/
 python Ortho4XP.py build --icao KJFK,KLGA --build-dir D:/xp_tiles/
+python Ortho4XP.py report tiles --build-dir D:/xp_tiles/
+python Ortho4XP.py report coverage --icao KJFK --build-dir D:/xp_tiles/
+python Ortho4XP.py report health --build-dir D:/xp_tiles/
 ```
 </content>
