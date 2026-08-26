@@ -177,7 +177,8 @@ def _validate_build(parser, args):
 
 ##############################################################################
 def build_parser():
-    """Build the argparse tree: one `build` subcommand with lat/lon + --provider/--zl."""
+    """Build the argparse tree: one `build` subcommand with lat/lon +
+    --provider/--zl, plus airport high-zl flags (--high-zl/--cover-zl/--cover-extent)."""
     parser = argparse.ArgumentParser(
         prog="Ortho4XP.py",
         description="Ortho4XP scenery generation tool",
@@ -206,10 +207,11 @@ def build_parser():
                          help="Upgrade airport textures to higher zoom level "
                               "(sets cover_airports_with_highres=True)")
     build_p.add_argument("--cover-zl", dest="cover_zl", type=int, default=None,
-                         help="Zoom level to cover airports with when --high-zl is set")
+                         help="Zoom level to cover airports with when --high-zl "
+                              "is set (default: the cover_zl config value)")
     build_p.add_argument("--cover-extent", dest="cover_extent", type=float, default=None,
                          help="Margin in km past the airport boundary for the "
-                              "high-zl zone (default 1.0)")
+                              "high-zl zone (default: the cover_extent config value)")
     build_p.add_argument("--build-dir", dest="build_dir", default="",
                          help="Tile store (GUI 'Base Folder'); default ./Tiles. "
                               "End with / or \\ to nest tiles under a base folder")
