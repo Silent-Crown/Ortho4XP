@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-08-24)
 Phase: 03 (icao-driven-build) — VERIFIED
 Plan: 2 of 2
 Status: Phase 03 shipped — PR #4
-Last activity: 2026-08-25
+Last activity: 2026-08-26 - Completed quick task 260826-cu5: add a --build-dir arg to the CLI
 
 Progress: [██████████] 100%
 
@@ -81,6 +81,12 @@ None yet.
 
 - Phase 3 planning should settle batch-ICAO partial-failure behavior (abort-all vs. skip-and-continue) — flagged by research, not yet decided.
 - Phase 4 (detail-zone report, disk overlap, --json, dry-run) is v1.x/deferred — not in this roadmap; revisit after v1 ships.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260826-cu5 | add a --build-dir arg to the CLI | 2026-08-26 | 7576f75 | [260826-cu5-add-a-build-dir-arg-to-the-cli](./quick/260826-cu5-add-a-build-dir-arg-to-the-cli/) |
 
 ## Deferred Items
 
