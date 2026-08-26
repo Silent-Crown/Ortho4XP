@@ -265,6 +265,7 @@ def _write_preview_zones(tile):
     zone_list= line in the per-tile cfg the build already wrote; no-op if there
     is nothing to cover (e.g. cover disabled, or the apt file was cleaned)."""
     import os
+    import ast
     import O4_File_Names as FNAMES
     import O4_DSF_Utils as DSF
 
@@ -280,13 +281,19 @@ def _write_preview_zones(tile):
             lines = f.readlines()
     except FileNotFoundError:
         return
-    new_line = "zone_list=" + str(zones) + "\n"
     for i, line in enumerate(lines):
         if line.startswith("zone_list="):
-            lines[i] = new_line
+            # Merge into any zones already written (write_to_config may have
+            # persisted real user zones); never clobber them.
+            try:
+                existing = ast.literal_eval(line[len("zone_list="):].strip() or "[]")
+            except (ValueError, SyntaxError):
+                existing = []
+            merged = existing + [z for z in zones if z not in existing]
+            lines[i] = "zone_list=" + str(merged) + "\n"
             break
     else:
-        lines.append(new_line)
+        lines.append("zone_list=" + str(zones) + "\n")
     with open(cfg_path, "w") as f:
         f.writelines(lines)
     print(f"preview zones: wrote {len(zones)} airport cover zone(s) to {cfg_path}")

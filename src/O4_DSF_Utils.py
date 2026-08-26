@@ -145,6 +145,15 @@ def airport_cover_boxes(tile):
             for airport in dico_airports
             if str(airport).upper() in wanted
         ]
+        if not airports_list:
+            UI.lvprint(
+                1,
+                "   WARNING: none of",
+                sorted(wanted),
+                "matched an airport in this tile's data (apt airports are keyed",
+                "by their OSM icao tag); no high-res cover applied. Rebuild with",
+                "--cover-all-airports to cover every airport in the tile.",
+            )
     elif tile.cover_airports_with_highres == "ICAO":
         airports_list = [
             airport
@@ -154,7 +163,12 @@ def airport_cover_boxes(tile):
     else:
         airports_list = dico_airports.keys()
     for airport in airports_list:
-        (xmin, ymin, xmax, ymax) = dico_airports[airport]["boundary"].bounds
+        boundary = dico_airports[airport]["boundary"]
+        if not boundary:
+            # invalid/absent OSM boundary (O4_Airport_Utils sets it to None);
+            # nothing to snap a cover rectangle to.
+            continue
+        (xmin, ymin, xmax, ymax) = boundary.bounds
         # extension
         xmin -= 1000 * tile.cover_extent * GEO.m_to_lon(tile.lat)
         xmax += 1000 * tile.cover_extent * GEO.m_to_lon(tile.lat)
