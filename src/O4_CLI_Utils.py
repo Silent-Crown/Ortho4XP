@@ -118,6 +118,11 @@ def run_batch_build(idents, radius, provider=None, zl=None):
     for ident in idents:
         try:
             lat, lon = ICAO.resolve_icao(ident, url)
+            # neighbor_tiles re-validates with tile bounds ([-90,89]/[-180,179])
+            # that are stricter than resolve_icao's ([-90,90]/[-180,180]); keep
+            # its ValueError (e.g. an airport at exactly lat 90 / lon 180) inside
+            # the skip path so one boundary ident can't abort the whole batch.
+            expanded = neighbor_tiles(lat, lon, radius)
         except ICAO.AviationServerUnreachable as e:
             print(str(e), file=sys.stderr)
             sys.exit(1)  # D-11: abort before any build
@@ -125,7 +130,7 @@ def run_batch_build(idents, radius, provider=None, zl=None):
             print(f"skipping {ident}: {e}", file=sys.stderr)
             unresolved.append(ident)
             continue
-        tiles.update(neighbor_tiles(lat, lon, radius))
+        tiles.update(expanded)
 
     built = failed = 0
     for lat, lon in sorted(tiles):
