@@ -98,7 +98,7 @@ def parse_icao_args(icao, icao_file):
 
 
 ##############################################################################
-def run_batch_build(idents, radius, provider=None, zl=None):
+def run_batch_build(idents, radius, provider=None, zl=None, build_dir=""):
     """Resolve every ICAO, assemble a unique sorted tile set, build each once.
 
     Resolves ALL idents before building any tile so an abort leaves no partial
@@ -111,6 +111,12 @@ def run_batch_build(idents, radius, provider=None, zl=None):
     the process exits 0 (D-13).
     """
     import O4_ICAO_Utils as ICAO
+
+    # A batch writes many tiles: a bare build_dir is a per-tile literal path in
+    # FNAMES, so every tile would collide into it. Force base-folder semantics
+    # (trailing separator) so each tile nests under its own zOrtho4XP_* dir.
+    if build_dir and not build_dir.endswith(("/", "\\")):
+        build_dir += "/"
 
     url = ICAO.get_server_url()
     tiles = set()
@@ -135,7 +141,7 @@ def run_batch_build(idents, radius, provider=None, zl=None):
     built = failed = 0
     for lat, lon in sorted(tiles):
         try:
-            run_build(lat, lon, provider, zl)
+            run_build(lat, lon, provider, zl, build_dir)
             built += 1
         except Exception as e:  # D-12: log and continue to the next tile
             print(f"tile ({lat},{lon}) failed: {e}", file=sys.stderr)
@@ -191,30 +197,49 @@ def build_parser():
                          help="Chebyshev radius in whole tiles around each ICAO (default 0)")
     build_p.add_argument("--provider", default=None, help="Imagery provider code")
     build_p.add_argument("--zl", type=int, default=None, help="Zoom level")
+    build_p.add_argument("--build-dir", dest="build_dir", default="",
+                         help="Tile store (GUI 'Base Folder'); default ./Tiles. "
+                              "End with / or \\ to nest tiles under a base folder")
 
     # D-08: nest all reports under one `report` subcommand.
     report_p = subparsers.add_parser(
         "report", help="Report on already-built tiles (read-only)"
     )
     report_sub = report_p.add_subparsers(dest="report_cmd", required=True)
-    report_sub.add_parser("tiles", help="List built/partial/missing tiles")
+
+    def _add_build_dir(p):
+        p.add_argument("--build-dir", dest="build_dir", default="",
+                       help="Tile store to report on (GUI 'Base Folder'); "
+                            "default ./Tiles")
+
+    tiles_p = report_sub.add_parser("tiles", help="List built/partial/missing tiles")
+    _add_build_dir(tiles_p)
+    tiles_p.add_argument("--zoom", action="store_true",
+                         help="Break each tile down by zoom level (count + size "
+                              "per ZL, incl. custom higher-detail zones)")
     cov_p = report_sub.add_parser(
         "coverage", help="Report coverage of an ICAO's containing tile"
     )
     cov_p.add_argument("--icao", required=True, help="ICAO airport code")
-    report_sub.add_parser("health", help="Report crashed-run leftovers")
+    _add_build_dir(cov_p)
+    health_p = report_sub.add_parser("health", help="Report crashed-run leftovers")
+    _add_build_dir(health_p)
 
     return parser
 
 
 ##############################################################################
-def run_build(lat, lon, provider=None, zl=None):
+def run_build(lat, lon, provider=None, zl=None, build_dir=""):
     """Floor/validate coordinates, construct the Tile, run the 4-stage pipeline.
 
     Build-module imports are done lazily here (not at module top) to preserve
     the CFG-imported-last constraint: importing O4_Config_Utils runs exec()-based
     mutation of other modules' globals, which must happen only after Ortho4XP.py's
     own top-level import block has already established that order.
+
+    ``build_dir`` is the GUI "Base Folder" equivalent (custom_build_dir): empty
+    means the default ./Tiles store; a trailing / or \\ makes it a base folder
+    that tiles nest under; otherwise it's the literal per-tile directory.
     """
     import O4_Config_Utils as CFG
     import O4_Vector_Map as VMAP
@@ -224,7 +249,7 @@ def run_build(lat, lon, provider=None, zl=None):
 
     lat_f = parse_lat(lat)
     lon_f = parse_lon(lon)
-    tile = CFG.Tile(lat_f, lon_f, '')
+    tile = CFG.Tile(lat_f, lon_f, build_dir)
     if provider is not None:
         tile.default_website = provider
     if zl is not None:
@@ -303,16 +328,17 @@ def dispatch(argv):
         if args.icao is not None or args.icao_file is not None:
             idents = parse_icao_args(args.icao, args.icao_file)
             run_and_report(run_batch_build, idents, args.radius,
-                           args.provider, args.zl)
+                           args.provider, args.zl, args.build_dir)
         else:
-            run_and_report(run_build, args.lat, args.lon, args.provider, args.zl)
+            run_and_report(run_build, args.lat, args.lon, args.provider,
+                           args.zl, args.build_dir)
     elif args.command == "report":
         if args.report_cmd == "coverage":
-            run_and_report(RPT.report_coverage, args.icao)
+            run_and_report(RPT.report_coverage, args.icao, args.build_dir)
         elif args.report_cmd == "tiles":
-            run_and_report(RPT.report_tiles)
+            run_and_report(RPT.report_tiles, args.build_dir, args.zoom)
         elif args.report_cmd == "health":
-            run_and_report(RPT.report_health)
+            run_and_report(RPT.report_health, args.build_dir)
 
 
 ##############################################################################
@@ -338,6 +364,15 @@ if __name__ == "__main__":
     assert _is_number("build") is False
     _a = build_parser().parse_args(["build", "--icao", "KJFK"])
     assert _a.icao == "KJFK" and _a.radius == 0 and _a.lat is None
+    assert _a.build_dir == ""  # default: use ./Tiles store
+    _b = build_parser().parse_args(["build", "47", "-122", "--build-dir", "D:/xp/"])
+    assert _b.build_dir == "D:/xp/"
+    _r = build_parser().parse_args(["report", "tiles", "--build-dir", "D:/xp/"])
+    assert _r.build_dir == "D:/xp/"
+    assert build_parser().parse_args(["report", "health"]).build_dir == ""
+    _z = build_parser().parse_args(["report", "tiles", "--zoom"])
+    assert _z.zoom is True
+    assert build_parser().parse_args(["report", "tiles"]).zoom is False
     assert neighbor_tiles(40.64, -73.78, 0) == [(40, -74)]
     assert len(neighbor_tiles(40.5, -73.5, 1)) == 9
     assert (0, -180) in neighbor_tiles(0.5, 179.5, 1)  # antimeridian wrap

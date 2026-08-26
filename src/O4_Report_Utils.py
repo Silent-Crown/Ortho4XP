@@ -13,6 +13,36 @@ import O4_File_Names as FNAMES
 # Strict tile-dir matcher (D-05/T-02-04): zOrtho4XP_<slat><slon>, ints only.
 _TILE_RE = re.compile(r"^zOrtho4XP_([+-]\d{2,})([+-]\d{3,})$")
 
+# Texture name is FNAMES.dds_file_name_from_attributes: {y}_{x}_{provider}{zl}.dds.
+# The zoom level is the trailing 2 digits before .dds; the greedy provider group
+# backtracks so a provider code ending in a digit (e.g. GO2) still parses right.
+_TEX_RE = re.compile(r"^\d+_\d+_(.+)(\d{2})\.dds$", re.IGNORECASE)
+
+
+def zoom_breakdown(build_dir):
+    """Per-zoom-level texture tally for a built tile (read-only).
+
+    Scans ``build_dir/textures`` and buckets each ``.dds`` by the zoom level
+    encoded in its filename. Non-texture files (e.g. water_transition.png) are
+    ignored. Returns a ``(zl)``-sorted list of ``(zl, count, bytes)`` — empty
+    when there is no textures dir or no parseable tiles.
+    """
+    tex = os.path.join(build_dir, "textures")
+    if not os.path.isdir(tex):
+        return []
+    counts, sizes = {}, {}
+    for name in os.listdir(tex):
+        m = _TEX_RE.match(name)
+        if not m:
+            continue
+        zl = int(m.group(2))
+        counts[zl] = counts.get(zl, 0) + 1
+        try:
+            sizes[zl] = sizes.get(zl, 0) + os.path.getsize(os.path.join(tex, name))
+        except OSError:
+            pass
+    return [(zl, counts[zl], sizes.get(zl, 0)) for zl in sorted(counts)]
+
 
 def read_cfg(path):
     """Parse a plain-text ``key=value`` Ortho4XP config into a dict.
@@ -31,13 +61,23 @@ def read_cfg(path):
     return result
 
 
-def tile_status(lat, lon):
+def _store_root(store):
+    """Normalize a tile-store root: empty stays empty (default ./Tiles); a
+    non-empty root gets a trailing separator so FNAMES.build_dir nests each
+    tile under it instead of treating it as one literal per-tile dir."""
+    if store and not store.endswith(("/", "\\")):
+        return store + "/"
+    return store
+
+
+def tile_status(lat, lon, store=""):
     """The D-05 predicate: ``missing`` / ``built`` / ``partial`` for one tile.
 
     ``built`` requires a non-empty DSF AND a non-empty ``textures/`` dir; a build
     dir that exists but fails either check is ``partial`` (never ``built``).
+    ``store`` selects the tile store (empty = default ./Tiles).
     """
-    build_dir = FNAMES.build_dir(lat, lon, "")
+    build_dir = FNAMES.build_dir(lat, lon, _store_root(store))
     if not os.path.isdir(build_dir):
         return "missing"
     dsf = FNAMES.dsf_file(build_dir, lat, lon)
@@ -49,15 +89,17 @@ def tile_status(lat, lon):
     return "partial"
 
 
-def iter_tiles():
-    """Yield ``(lat, lon, path)`` for every ``zOrtho4XP_<latlon>`` dir in Tiles/.
+def iter_tiles(store=""):
+    """Yield ``(lat, lon, path)`` for every ``zOrtho4XP_<latlon>`` dir in the store.
 
     lat/lon are ints recovered from the strict regex; non-matching directory
-    names are ignored. Yields nothing when ``Tile_dir`` is absent.
+    names are ignored. ``store`` selects the tile store (empty = default
+    ./Tiles). Yields nothing when the store dir is absent.
     """
-    if not os.path.isdir(FNAMES.Tile_dir):
+    root = store.rstrip("/\\") if store else FNAMES.Tile_dir
+    if not os.path.isdir(root):
         return
-    for entry in os.scandir(FNAMES.Tile_dir):
+    for entry in os.scandir(root):
         if not entry.is_dir():
             continue
         m = _TILE_RE.match(entry.name)
@@ -99,15 +141,17 @@ def _human_size(n):
         size /= 1024
 
 
-def report_tiles():
+def report_tiles(store="", show_zoom=False):
     """Print an aligned inventory of built tiles: latlon, provider, zoom, date, size.
 
-    Rows are (lat, lon)-sorted (deterministic). An absent/empty Tiles/ prints a
-    single clean "no tiles built" line. Read-only (D-06).
+    Rows are (lat, lon)-sorted (deterministic). An absent/empty store prints a
+    single clean "no tiles built" line. Read-only (D-06). When ``show_zoom`` is
+    set, each tile is followed by indented per-zoom-level lines (count + size)
+    so custom higher-detail zones (ZL17/18/19) are visible, not just the base zl.
     """
     import time
 
-    tiles = sorted(iter_tiles(), key=lambda t: (t[0], t[1]))
+    tiles = sorted(iter_tiles(store), key=lambda t: (t[0], t[1]))
     if not tiles:
         print("no tiles built")
         return
@@ -123,6 +167,9 @@ def report_tiles():
         size = _human_size(_dir_size(path))
         print(f"{FNAMES.short_latlon(lat, lon):<9} {provider or '-':<10} "
               f"{zoom or '-':<5} {built:<19} {size:>9}")
+        if show_zoom:
+            for zl, count, nbytes in zoom_breakdown(path):
+                print(f"    ZL{zl:<3} {count:6d} tex {_human_size(nbytes):>9}")
 
 
 # Data* intermediate extensions a crashed run leaves behind (D-07).
@@ -152,16 +199,16 @@ def tile_leftovers(build_dir, lat, lon):
     return classes
 
 
-def report_health():
+def report_health(store=""):
     """Flag partial tiles + their orphan classes and a global tmp/ leftover.
 
     Reuses the D-05 ``tile_status`` predicate; no time-based staleness (D-06).
     Read-only — deletes/moves nothing. Prints a clean "no issues" line when
-    nothing is flagged.
+    nothing is flagged. ``store`` selects the tile store (empty = default ./Tiles).
     """
     flagged = []
-    for lat, lon, path in sorted(iter_tiles(), key=lambda t: (t[0], t[1])):
-        if tile_status(lat, lon) != "partial":
+    for lat, lon, path in sorted(iter_tiles(store), key=lambda t: (t[0], t[1])):
+        if tile_status(lat, lon, store) != "partial":
             continue
         classes = tile_leftovers(path, lat, lon) or ["partial"]
         flagged.append((lat, lon, classes))
@@ -201,12 +248,13 @@ def coverage_tiles(lat, lon):
             yield nlat, nlon
 
 
-def report_coverage(icao):
+def report_coverage(icao, store=""):
     """Resolve an ICAO and print the built/partial/missing status of its 3x3 block.
 
     Reports the containing tile plus its 8 neighbors (D-11). The two resolver
     failures fail loud on a single stderr line with a non-zero exit (D-04) — no
-    traceback, no coordinate, no tile rows.
+    traceback, no coordinate, no tile rows. ``store`` selects the tile store
+    (empty = default ./Tiles).
     """
     import sys
 
@@ -220,9 +268,22 @@ def report_coverage(icao):
         sys.exit(1)
     for lat, lon in coverage_tiles(lat_f, lon_f):
         print(f"{ident:<8} {FNAMES.short_latlon(lat, lon):<9} "
-              f"{tile_status(lat, lon)}")
+              f"{tile_status(lat, lon, store)}")
 
 
 if __name__ == "__main__":
-    assert read_cfg.__doc__  # trivially importable
+    import tempfile
+
+    # zoom_breakdown: buckets textures by trailing-2-digit ZL, skips non-tiles,
+    # and parses provider codes that end in a digit (GO2 vs zl 18).
+    with tempfile.TemporaryDirectory() as d:
+        tex = os.path.join(d, "textures")
+        os.makedirs(tex)
+        for n in ("100_200_BI16.dds", "101_200_BI16.dds", "100_201_BI18.dds",
+                  "50_60_GO218.dds", "water_transition.png"):
+            with open(os.path.join(tex, n), "wb") as f:
+                f.write(b"x")
+        bd = zoom_breakdown(d)
+        assert bd == [(16, 2, 2), (18, 2, 2)], bd  # GO218 -> zl 18, not 218
+    assert zoom_breakdown(tempfile.gettempdir() + os.sep + "no_such_tile_dir") == []
     print("O4_Report_Utils self-check OK")
