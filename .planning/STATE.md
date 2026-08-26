@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-08-24)
 Phase: 03 (icao-driven-build) — VERIFIED
 Plan: 2 of 2
 Status: Phase 03 shipped — PR #4
-Last activity: 2026-08-26 - Completed quick task 260826-f6k: Add --high-zl and --cover-zl flags to the CLI build subcommand
+Last activity: 2026-08-26 - Shipped quick task 260826-f6k (high-zl CLI flags) — PR #6
 
 Progress: [██████████] 100%
 
