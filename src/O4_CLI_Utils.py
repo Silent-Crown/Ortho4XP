@@ -214,6 +214,9 @@ def build_parser():
 
     tiles_p = report_sub.add_parser("tiles", help="List built/partial/missing tiles")
     _add_build_dir(tiles_p)
+    tiles_p.add_argument("--zoom", action="store_true",
+                         help="Break each tile down by zoom level (count + size "
+                              "per ZL, incl. custom higher-detail zones)")
     cov_p = report_sub.add_parser(
         "coverage", help="Report coverage of an ICAO's containing tile"
     )
@@ -333,7 +336,7 @@ def dispatch(argv):
         if args.report_cmd == "coverage":
             run_and_report(RPT.report_coverage, args.icao, args.build_dir)
         elif args.report_cmd == "tiles":
-            run_and_report(RPT.report_tiles, args.build_dir)
+            run_and_report(RPT.report_tiles, args.build_dir, args.zoom)
         elif args.report_cmd == "health":
             run_and_report(RPT.report_health, args.build_dir)
 
@@ -367,6 +370,9 @@ if __name__ == "__main__":
     _r = build_parser().parse_args(["report", "tiles", "--build-dir", "D:/xp/"])
     assert _r.build_dir == "D:/xp/"
     assert build_parser().parse_args(["report", "health"]).build_dir == ""
+    _z = build_parser().parse_args(["report", "tiles", "--zoom"])
+    assert _z.zoom is True
+    assert build_parser().parse_args(["report", "tiles"]).zoom is False
     assert neighbor_tiles(40.64, -73.78, 0) == [(40, -74)]
     assert len(neighbor_tiles(40.5, -73.5, 1)) == 9
     assert (0, -180) in neighbor_tiles(0.5, 179.5, 1)  # antimeridian wrap
