@@ -98,7 +98,8 @@ def parse_icao_args(icao, icao_file):
 
 
 ##############################################################################
-def run_batch_build(idents, radius, provider=None, zl=None, build_dir=""):
+def run_batch_build(idents, radius, provider=None, zl=None, build_dir="",
+                     high_zl=False, cover_zl=None, cover_extent=None):
     """Resolve every ICAO, assemble a unique sorted tile set, build each once.
 
     Resolves ALL idents before building any tile so an abort leaves no partial
@@ -141,7 +142,8 @@ def run_batch_build(idents, radius, provider=None, zl=None, build_dir=""):
     built = failed = 0
     for lat, lon in sorted(tiles):
         try:
-            run_build(lat, lon, provider, zl, build_dir)
+            run_build(lat, lon, provider, zl, build_dir, high_zl, cover_zl,
+                      cover_extent)
             built += 1
         except Exception as e:  # D-12: log and continue to the next tile
             print(f"tile ({lat},{lon}) failed: {e}", file=sys.stderr)
@@ -168,11 +170,15 @@ def _validate_build(parser, args):
         parser.error("--radius requires an ICAO source")
     if args.radius < 0:
         parser.error("--radius must be >= 0")
+    if not args.high_zl and (args.cover_zl is not None
+                             or args.cover_extent is not None):
+        parser.error("--cover-zl/--cover-extent require --high-zl")
 
 
 ##############################################################################
 def build_parser():
-    """Build the argparse tree: one `build` subcommand with lat/lon + --provider/--zl."""
+    """Build the argparse tree: one `build` subcommand with lat/lon +
+    --provider/--zl, plus airport high-zl flags (--high-zl/--cover-zl/--cover-extent)."""
     parser = argparse.ArgumentParser(
         prog="Ortho4XP.py",
         description="Ortho4XP scenery generation tool",
@@ -197,6 +203,15 @@ def build_parser():
                          help="Chebyshev radius in whole tiles around each ICAO (default 0)")
     build_p.add_argument("--provider", default=None, help="Imagery provider code")
     build_p.add_argument("--zl", type=int, default=None, help="Zoom level")
+    build_p.add_argument("--high-zl", dest="high_zl", action="store_true",
+                         help="Upgrade airport textures to higher zoom level "
+                              "(sets cover_airports_with_highres=True)")
+    build_p.add_argument("--cover-zl", dest="cover_zl", type=int, default=None,
+                         help="Zoom level to cover airports with when --high-zl "
+                              "is set (default: the cover_zl config value)")
+    build_p.add_argument("--cover-extent", dest="cover_extent", type=float, default=None,
+                         help="Margin in km past the airport boundary for the "
+                              "high-zl zone (default: the cover_extent config value)")
     build_p.add_argument("--build-dir", dest="build_dir", default="",
                          help="Tile store (GUI 'Base Folder'); default ./Tiles. "
                               "End with / or \\ to nest tiles under a base folder")
@@ -229,7 +244,8 @@ def build_parser():
 
 
 ##############################################################################
-def run_build(lat, lon, provider=None, zl=None, build_dir=""):
+def run_build(lat, lon, provider=None, zl=None, build_dir="", high_zl=False,
+              cover_zl=None, cover_extent=None):
     """Floor/validate coordinates, construct the Tile, run the 4-stage pipeline.
 
     Build-module imports are done lazily here (not at module top) to preserve
@@ -254,6 +270,12 @@ def run_build(lat, lon, provider=None, zl=None, build_dir=""):
         tile.default_website = provider
     if zl is not None:
         tile.default_zl = zl
+    if high_zl:
+        tile.cover_airports_with_highres = "True"
+    if cover_zl is not None:
+        tile.cover_zl = cover_zl
+    if cover_extent is not None:
+        tile.cover_extent = cover_extent
     VMAP.build_poly_file(tile)
     MESH.build_mesh(tile)
     MASK.build_masks(tile)
@@ -328,10 +350,12 @@ def dispatch(argv):
         if args.icao is not None or args.icao_file is not None:
             idents = parse_icao_args(args.icao, args.icao_file)
             run_and_report(run_batch_build, idents, args.radius,
-                           args.provider, args.zl, args.build_dir)
+                           args.provider, args.zl, args.build_dir,
+                           args.high_zl, args.cover_zl, args.cover_extent)
         else:
             run_and_report(run_build, args.lat, args.lon, args.provider,
-                           args.zl, args.build_dir)
+                           args.zl, args.build_dir,
+                           args.high_zl, args.cover_zl, args.cover_extent)
     elif args.command == "report":
         if args.report_cmd == "coverage":
             run_and_report(RPT.report_coverage, args.icao, args.build_dir)
@@ -378,4 +402,19 @@ if __name__ == "__main__":
     assert (0, -180) in neighbor_tiles(0.5, 179.5, 1)  # antimeridian wrap
     assert len(neighbor_tiles(89.5, 0.5, 1)) == 6  # pole skip
     assert parse_icao_args("KJFK, KLGA ,KEWR", None) == ["KJFK", "KLGA", "KEWR"]
+    _hz = build_parser().parse_args(
+        ["build", "--icao", "KJFK", "--high-zl", "--cover-zl", "19",
+         "--cover-extent", "0.5"])
+    assert _hz.high_zl is True and _hz.cover_zl == 19 and _hz.cover_extent == 0.5
+    _nhz = build_parser().parse_args(["build", "47", "-122"])
+    assert (_nhz.high_zl is False and _nhz.cover_zl is None
+            and _nhz.cover_extent is None)
+    # --cover-zl without --high-zl is a usage error (parser.error -> exit 2)
+    _p = build_parser()
+    try:
+        _validate_build(_p, _p.parse_args(["build", "47", "-122", "--cover-zl", "19"]))
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("--cover-zl without --high-zl should error")
     print("O4_CLI_Utils self-check OK")
