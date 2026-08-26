@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-08-24)
 Phase: 03 (icao-driven-build) — VERIFIED
 Plan: 2 of 2
 Status: Phase 03 shipped — PR #4
-Last activity: 2026-08-26 - Completed quick task 260826-cu5: add a --build-dir arg to the CLI
+Last activity: 2026-08-26 - Completed quick task 260826-dbo: report tiles zoom-level detail breakdown
 
 Progress: [██████████] 100%
 
@@ -87,6 +87,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260826-cu5 | add a --build-dir arg to the CLI | 2026-08-26 | 7576f75 | [260826-cu5-add-a-build-dir-arg-to-the-cli](./quick/260826-cu5-add-a-build-dir-arg-to-the-cli/) |
+| 260826-dbo | report tiles zoom-level detail breakdown | 2026-08-26 | 50fd78a | [260826-dbo-report-tiles-zoom-level-detail-breakdown](./quick/260826-dbo-report-tiles-zoom-level-detail-breakdown/) |
 
 ## Deferred Items
 
